@@ -1,13 +1,24 @@
 import { Message, MessageEmbed, EmbedFieldData } from "discord.js";
+// import User from '../models/User';
 
 class AvailableCommands {
     constructor(private message: Message) { }
 
     // stats([first, last]: [string?, string?]) {
     //     this.message.channel.send('Starting your adventure!');
+    // Example saving data
+    // const user = new User({ id: 1, name: 'Adam' });
+    // const user.save();
+
+    // Example getting data
+    // const adam = await User.find({ name: 'Adam' });
     // }
 
-    stats() {
+    start() {
+        this.message.channel.send('Starting your adventure!');
+    }
+
+    async stats() {
         const embed = new MessageEmbed()
             // Set the title of the field
             .setTitle(`Character Sheet for: ${this.message.author.username}`)
