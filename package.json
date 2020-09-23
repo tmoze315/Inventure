@@ -5,13 +5,16 @@
     "main": "src/index.ts",
     "scripts": {
         "start": "node ./dist/index.js",
-        "watch": "npx tsc-watch --onSuccess \"npm start\""
+        "watch": "npm run tsc && npx tsc-watch --onSuccess \"npm start\"",
+        "tsc": "tsc"
     },
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "@types/node": "^14.11.2",
         "bufferutil": "^4.0.1",
         "discord.js": "^12.3.1",
+        "dotenv": "^8.2.0",
         "erlpack": "github:discord/erlpack",
         "typescript": "^4.0.3",
         "utf-8-validate": "^5.0.2",

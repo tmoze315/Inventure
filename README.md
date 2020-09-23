@@ -1,11 +1,12 @@
 # Inventure
 
-Real basics of the bot setup. Need to sort out data storage next.
+Real basics of the bot setup.
+
+Duplicate `.env.example` and call it `.env`. Add your Discord API Token here.
 
 Install dependencies with:
 npm install
 
 Build and run with:
-npm start
+npm run watch
 
-Note that my discord key is commited. I’ll move this into an environment variable at some point too

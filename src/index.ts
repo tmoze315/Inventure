@@ -1,4 +1,5 @@
-'use strict';
+import dotenv from 'dotenv';
+dotenv.config();
 
 import { Message, Client } from 'discord.js';
 import { AvailableCommands } from './core/available-commands';
@@ -7,7 +8,7 @@ import { AvailableCommands } from './core/available-commands';
 const client = new Client();
 
 client.on('ready', () => {
-    console.log('I am ready!');
+    console.log('Bot successfully loaded.');
 });
 
 // Create an event listener for messages
@@ -35,4 +36,4 @@ client.on('message', (message: Message) => {
 });
 
 // Log our bot in using the token from https://discord.com/developers/applications
-client.login('NzU4MDQzMTM3Mjg4NTY4ODMz.X2pMrw.FKfMmyLmXo1UWkiZgpHLFV-uTLw');
+client.login(process.env.DISCORD_KEY);
