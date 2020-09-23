@@ -1,7 +1,7 @@
 'use strict';
 
 import { Message, Client } from 'discord.js';
-import { Adventure } from './adventure';
+import { AvailableCommands } from './core/available-commands';
 
 // Create an instance of a Discord client
 const client = new Client();
@@ -25,7 +25,7 @@ client.on('message', (message: Message) => {
         return;
     }
 
-    const adventure = new Adventure(message);
+    const adventure = new AvailableCommands(message);
 
     if (typeof (adventure as any)[command] === 'function') {
         (adventure as any)[command](args);
@@ -35,4 +35,4 @@ client.on('message', (message: Message) => {
 });
 
 // Log our bot in using the token from https://discord.com/developers/applications
-client.login('NzU4MDQzMTM3Mjg4NTY4ODMz.X2pMrw.IQHhyVHCWX1Ukv2weo1erox1MZE');
+client.login('NzU4MDQzMTM3Mjg4NTY4ODMz.X2pMrw.FKfMmyLmXo1UWkiZgpHLFV-uTLw');

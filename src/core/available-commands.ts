@@ -1,6 +1,6 @@
 import { Message, MessageEmbed, EmbedFieldData } from "discord.js";
 
-class Adventure {
+class AvailableCommands {
     constructor(private message: Message) { }
 
     // stats([first, last]: [string?, string?]) {
@@ -41,4 +41,4 @@ Max Level: 115
     }
 }
 
-export { Adventure };
+export { AvailableCommands };
