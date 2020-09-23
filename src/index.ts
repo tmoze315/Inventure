@@ -2,9 +2,9 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { Message, Client } from 'discord.js';
-import { AvailableCommands } from './core/available-commands';
 import { connect } from 'mongoose';
 import PlayerService from './services/PlayerService';
+import availableCommands from './config/available-commands';
 
 (async () => {
     await connect('mongodb://127.0.0.1:27017/inventure', {
@@ -35,8 +35,6 @@ import PlayerService from './services/PlayerService';
             return;
         }
 
-        const adventure = new AvailableCommands(message);
-
         if ('start' !== command) {
             const player = await PlayerService.getCurrentPlayer(message.author);
 
@@ -47,11 +45,15 @@ import PlayerService from './services/PlayerService';
             }
         }
 
-        if ('function' === typeof (adventure as any)[command]) {
-            (adventure as any)[command](args);
-        } else {
-            message.channel.send(`Unable to find command '${command}'`);
-        }
+        console.log(availableCommands);
+        // Check if command is in config. Call it        
+        // const adventure = new AvailableCommands(message);
+
+        // if ('function' === typeof (adventure as any)[command]) {
+        //     (adventure as any)[command](args);
+        // } else {
+        //     message.channel.send(`Unable to find command '${command}'`);
+        // }
     });
 
     // Log our bot in using the token from https://discord.com/developers/applications

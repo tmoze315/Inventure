@@ -1,14 +1,8 @@
 import { Message, MessageEmbed, EmbedFieldData, User } from "discord.js";
-import { Player } from '../models/Player';
+import { Player } from '../../models/Player';
+import BaseCommands from "./base-commands";
 
-class AvailableCommands {
-    private user: User;
-    private player: any;
-
-    constructor(private message: Message) {
-        this.user = message.author;
-    }
-
+class GenericCommands extends BaseCommands {
     // stats([first, last]: [string?, string?]) {
     // Example parameters
     // }
