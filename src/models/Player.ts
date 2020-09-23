@@ -1,7 +1,7 @@
 import { Schema, model } from 'mongoose';
-import Item from './Item';
+import { ItemSchema } from './Item';
 
-const User = new Schema({
+const PlayerSchema = new Schema({
     id: String,
     username: String,
     class: {
@@ -94,17 +94,17 @@ const User = new Schema({
         },
     },
     gear: {
-        helmet: Item,
-        gloves: Item,
-        armor: Item,
-        weapon: Item,
-        shield: Item,
-        boots: Item,
-        amulet: Item,
-        ring: Item,
-        rune: Item,
+        helmet: ItemSchema,
+        gloves: ItemSchema,
+        armor: ItemSchema,
+        weapon: ItemSchema,
+        shield: ItemSchema,
+        boots: ItemSchema,
+        amulet: ItemSchema,
+        ring: ItemSchema,
+        rune: ItemSchema,
     },
-    backpack: [Item],
+    backpack: [ItemSchema],
     adventures: {
         wins: {
             type: Number,
@@ -119,4 +119,6 @@ const User = new Schema({
     }
 });
 
-export default model('User', User);
+const Player = model('Player', PlayerSchema);
+
+export { Player, PlayerSchema };

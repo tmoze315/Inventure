@@ -1,21 +1,35 @@
-import { Message, MessageEmbed, EmbedFieldData } from "discord.js";
-// import User from '../models/User';
+import { Message, MessageEmbed, EmbedFieldData, User } from "discord.js";
+import { Player } from '../models/Player';
 
 class AvailableCommands {
-    constructor(private message: Message) { }
+    private user: User;
+    private player: any;
+
+    constructor(private message: Message) {
+        this.user = message.author;
+    }
 
     // stats([first, last]: [string?, string?]) {
-    //     this.message.channel.send('Starting your adventure!');
-    // Example saving data
-    // const user = new User({ id: 1, name: 'Adam' });
-    // const user.save();
-
-    // Example getting data
-    // const adam = await User.find({ name: 'Adam' });
+    // Example parameters
     // }
 
-    start() {
-        this.message.channel.send('Starting your adventure!');
+    async start() {
+        let player = await Player.findOne({ id: this.user.id }).exec();
+
+        if (player) {
+            this.message.channel.send('Looks like you have already started your adventure!');
+
+            return;
+        }
+
+        player = new Player({
+            id: this.user.id,
+            username: this.user.username,
+        });
+
+        player.save();
+
+        this.message.channel.send(`Welcome to Inventure, ${player.get('username')}`);
     }
 
     async stats() {

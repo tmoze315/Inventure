@@ -4,6 +4,7 @@ dotenv.config();
 import { Message, Client } from 'discord.js';
 import { AvailableCommands } from './core/available-commands';
 import { connect } from 'mongoose';
+import PlayerService from './services/PlayerService';
 
 (async () => {
     await connect('mongodb://127.0.0.1:27017/inventure', {
@@ -20,7 +21,7 @@ import { connect } from 'mongoose';
     });
 
     // Create an event listener for messages
-    client.on('message', (message: Message) => {
+    client.on('message', async (message: Message) => {
         const prefix = '-';
 
         if (!message.content.startsWith(prefix) || message.author.bot) {
@@ -36,7 +37,17 @@ import { connect } from 'mongoose';
 
         const adventure = new AvailableCommands(message);
 
-        if (typeof (adventure as any)[command] === 'function') {
+        if ('start' !== command) {
+            const player = await PlayerService.getCurrentPlayer(message.author);
+
+            if (!player) {
+                message.channel.send(`Oops, it looks like you haven't started your journey yet. Create your character with \`${prefix}start\``);
+
+                return;
+            }
+        }
+
+        if ('function' === typeof (adventure as any)[command]) {
             (adventure as any)[command](args);
         } else {
             message.channel.send(`Unable to find command '${command}'`);

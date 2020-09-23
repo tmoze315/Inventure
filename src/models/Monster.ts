@@ -1,6 +1,6 @@
 import { Schema, model } from 'mongoose';
 
-const Monster = new Schema({
+const MonsterSchema = new Schema({
     name: String,
     type: {
         type: String,
@@ -34,4 +34,6 @@ const Monster = new Schema({
     },
 });
 
-export default model('Monster', Monster);
+const Monster = model('Monster', MonsterSchema);
+
+export { Monster, MonsterSchema };

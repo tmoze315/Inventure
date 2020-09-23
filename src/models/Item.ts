@@ -1,6 +1,6 @@
 import { Schema, model } from 'mongoose';
 
-const Item = new Schema({
+const ItemSchema = new Schema({
     name: String,
     slot: String,
     rarity: {
@@ -41,4 +41,6 @@ const Item = new Schema({
     },
 });
 
-export default model('Item', Item);
+const Item = model('Item', ItemSchema);
+
+export { Item, ItemSchema };
