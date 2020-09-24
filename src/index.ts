@@ -22,7 +22,7 @@ import availableCommands from './config/available-commands';
 
     // Create an event listener for messages
     client.on('message', async (message: Message) => {
-        const prefix = '-';
+        const prefix = process.env.PREFIX || '-';
 
         if (!message.content.startsWith(prefix) || message.author.bot) {
             return;
@@ -45,15 +45,18 @@ import availableCommands from './config/available-commands';
             }
         }
 
-        console.log(availableCommands);
-        // Check if command is in config. Call it        
-        // const adventure = new AvailableCommands(message);
+        // Fine the matching "route" (aka which commands file and method to call)
+        const route = (availableCommands as any)[command];
 
-        // if ('function' === typeof (adventure as any)[command]) {
-        //     (adventure as any)[command](args);
-        // } else {
-        //     message.channel.send(`Unable to find command '${command}'`);
-        // }
+        // We don't support the given command
+        if (!route) {
+            return;
+        }
+
+        // Create the controller, so we have a reference to the message available at all times
+        const commandInstance = new route.class(message);
+
+        commandInstance[route.method](args);
     });
 
     // Log our bot in using the token from https://discord.com/developers/applications

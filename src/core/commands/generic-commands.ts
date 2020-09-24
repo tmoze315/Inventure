@@ -60,4 +60,4 @@ Max Level: 115
     }
 }
 
-export { AvailableCommands };
+export { GenericCommands };
