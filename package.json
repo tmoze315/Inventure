@@ -3,9 +3,23 @@
     "version": "1.0.0",
     "description": "Adventure game for Discord",
     "main": "src/index.ts",
+    "nodemonConfig": {
+        "watch": [
+            "src"
+        ],
+        "ext": "ts",
+        "ignore": [
+            ""
+        ],
+        "delay": "3",
+        "execMap": {
+            "ts": "ts-node"
+        }
+    },
     "scripts": {
         "start": "npm run tsc && node ./dist/index.js",
         "watch": "npm run tsc && npx tsc-watch --onSuccess \"node ./dist/index.js\"",
+        "watch2": "npm run tsc && npx nodemon ./dist/index.js",
         "tsc": "tsc"
     },
     "author": "",
@@ -23,6 +37,7 @@
         "zlib-sync": "^0.1.7"
     },
     "devDependencies": {
+        "nodemon": "^2.0.4",
         "tsc-watch": "^4.2.9"
     }
 }
