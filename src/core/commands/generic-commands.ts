@@ -1,5 +1,7 @@
 import { Message, MessageEmbed, EmbedFieldData, User } from "discord.js";
+import { textChangeRangeIsUnchanged } from "typescript";
 import { Player } from '../../models/Player';
+import { Reply } from "../Reply";
 import BaseCommands from "./base-commands";
 
 class GenericCommands extends BaseCommands {
@@ -23,10 +25,36 @@ class GenericCommands extends BaseCommands {
 
         player.save();
 
-        this.message.channel.send(`Welcome to Inventure, ${player.get('username')}`);
+        const reply = new Reply({
+            type: 'text',
+            body: [
+                `**Welcome to Inventure, ${player.get('username')}!**`,
+                ``,
+                `You appear eager to embark upon your journey. In order to engage your first encounter, please use command \`-adventure\`.`,
+                ``,
+                `Should you wish to study the lore of this new world you may use command \`-lore\`. `,
+                ``,
+                `To examine your clothing and armor, you may use command \`-stats\`, and the command \`-backpack\` will allow you to fossick through your bag.`,
+            ],
+        });
+
+        this.message.channel.send(reply.getContent());
     }
 
     async stats() {
+        const reply = new Reply({
+            type: 'text',
+            body: [
+                `A level **104 Berserker**`,
+                `Berserkers have the option to **rage** and add big bonuses to attacks, but fumbles hurt. Use the rage command when attacking in an adventure.`,
+                ``,
+                `\`\`\`js`,
+                `Rebirths: 15`,
+                `Max Level: 115`,
+                `\`\`\``,
+            ],
+        });
+
         const embed = new MessageEmbed()
             // Set the title of the field
             .setTitle(`Character Sheet for: ${this.message.author.username}`)
@@ -34,15 +62,7 @@ class GenericCommands extends BaseCommands {
             // Set the color of the embed
             .setColor('DARK_NAVY')
             // Set the main content of the embed
-            .setDescription(`A level **104 Berserker**
-
-            Berserkers have the option to **rage** and add big bonuses to attacks, but fumbles hurt. Use the rage command when attacking in an adventure.
-
-            \`\`\`js
-Rebirths: 15
-Max Level: 115
-\`\`\`
-`)
+            .setDescription(reply.getContent())
             .addFields([
                 <EmbedFieldData>{
                     name: 'Stats',
