@@ -2,9 +2,9 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { Message, Client } from 'discord.js';
-import { AvailableCommands } from './core/available-commands';
 import { connect } from 'mongoose';
 import PlayerService from './services/PlayerService';
+import availableCommands from './config/available-commands';
 
 (async () => {
     await connect('mongodb://127.0.0.1:27017/inventure', {
@@ -22,7 +22,7 @@ import PlayerService from './services/PlayerService';
 
     // Create an event listener for messages
     client.on('message', async (message: Message) => {
-        const prefix = '-';
+        const prefix = process.env.PREFIX || '-';
 
         if (!message.content.startsWith(prefix) || message.author.bot) {
             return;
@@ -35,8 +35,6 @@ import PlayerService from './services/PlayerService';
             return;
         }
 
-        const adventure = new AvailableCommands(message);
-
         if ('start' !== command) {
             const player = await PlayerService.getCurrentPlayer(message.author);
 
@@ -47,11 +45,18 @@ import PlayerService from './services/PlayerService';
             }
         }
 
-        if ('function' === typeof (adventure as any)[command]) {
-            (adventure as any)[command](args);
-        } else {
-            message.channel.send(`Unable to find command '${command}'`);
+        // Fine the matching "route" (aka which commands file and method to call)
+        const route = (availableCommands as any)[command];
+
+        // We don't support the given command
+        if (!route) {
+            return;
         }
+
+        // Create the controller, so we have a reference to the message available at all times
+        const commandInstance = new route.class(message);
+
+        commandInstance[route.method](args);
     });
 
     // Log our bot in using the token from https://discord.com/developers/applications
