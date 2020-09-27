@@ -1,6 +1,7 @@
 import { Schema, model, Document, Types } from 'mongoose';
 import { addSeconds, isAfter } from 'date-fns';
 import AdventureConfig from '../config/adventure';
+import { AdventureResultSchema } from './AdventureResult';
 
 interface IGuild extends Document {
     id: String;
