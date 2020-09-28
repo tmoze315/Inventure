@@ -5,7 +5,7 @@ interface IPlayer extends Document {
     id: string,
     guildId: string,
     username: string,
-    admin: Boolean,
+    isAdmin: Boolean,
     class: string,
     background: string,
     experience: number,
@@ -13,7 +13,9 @@ interface IPlayer extends Document {
     rebirths: number,
     currency: number,
     getLevel: Function,
+    setLevel: Function,
     getHeroClass: Function,
+    setHeroClass: Function,
     getHeroClassDescription: Function,
     getHeroClassThumbnail: Function,
     getRebirths: Function,
@@ -21,6 +23,9 @@ interface IPlayer extends Document {
     getStat: Function,
     getSkillpoint: Function,
     getIdFromName: Function,
+    setRebirths: Function,
+    addCurrency: Function,
+    makeAdmin: Function,
 }
 
 const PlayerSchema = new Schema({
@@ -34,7 +39,7 @@ const PlayerSchema = new Schema({
     username: {
         type: String,
     },
-    admin: {
+    isAdmin: {
         type: Boolean,
         default: false
     },
@@ -188,6 +193,19 @@ PlayerSchema.methods.getHeroClass = function (): string {
     return this.get('class') || 'Hero';
 };
 
+PlayerSchema.methods.setHeroClass = function (heroClass: string): string {
+    heroClass = heroClass.toLowerCase();
+    heroClass = heroClass.charAt(0).toUpperCase() + heroClass.slice(1).trim();
+
+    if (heroClass in ['Berserker', 'Wizard', 'Ranger', 'Cleric', 'Tinkerer']) {
+        throw new Error('Unsupported hero class');
+    }
+
+    this.heroClass = heroClass;
+
+    return this.save();
+};
+
 PlayerSchema.methods.getStat = function (stat: string): number {
     return this.get('stats')[stat] || 0;
 };
@@ -213,11 +231,32 @@ PlayerSchema.methods.getMaxLevel = function () {
 };
 
 PlayerSchema.methods.getIdFromName = function (id: string) {
-    let idSymbol = id;
-    let idNoSymbol = id.replace(/[!@<>]/g,'');
-    return idNoSymbol;
+    return id.replace(/[!@<>]/g, '');
 };
 
+PlayerSchema.methods.setRebirths = function (rebirths: number) {
+    this.rebirths = rebirths;
+
+    return this.save();
+};
+
+PlayerSchema.methods.setLevel = function (level: number) {
+    this.level = level;
+
+    return this.save();
+};
+
+PlayerSchema.methods.addCurrency = function (amount: number) {
+    this.currency += amount;
+
+    return this.save();
+};
+
+PlayerSchema.methods.makeAdmin = function (amount: number) {
+    this.isAdmin = true;
+
+    return this.save();
+};
 
 const Player = model<IPlayer>('Player', PlayerSchema);
 

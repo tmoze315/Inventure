@@ -9,7 +9,6 @@ import { makeTimeRemainingMessage } from "../messages/time-remaining";
 import { makeAdventureResults } from "../messages/adventure-results";
 import EnemyService from "../services/EnemyService";
 import { IEnemy } from "../data/enemies";
-import { AdventureResult } from "../models/AdventureResult";
 
 class AdventureCommands extends BaseCommands {
     // stats([first, last]: [string?, string?]) {

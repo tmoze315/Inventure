@@ -6,201 +6,129 @@ import { makeAdminMessage } from "../messages/is-admin";
 import { makeLevelChangedMessage } from "../messages/level-changed";
 import { makeNotAdminMessage } from "../messages/not-admin";
 import { makeRebirthsChangedMessage } from "../messages/rebirths-changed";
-import { Player, IPlayer } from "../models/Player";
+import { Player } from "../models/Player";
 import BaseCommands from "./base-commands";
 
-
 class AdminCommands extends BaseCommands {
+    private async isAdmin() {
+        const user = await Player.findOne({ id: this.message.author.id }).exec();
 
-    private async adminCheck() {
-        // TODO check you are an admin
-        const commandUser = this.message.author.id;
-
-        let adminFindDoc = await Player.findOne({ id: commandUser }).exec();
-        let adminCheckDoc = await adminFindDoc?.get('admin');
-        var isAdmin = new Boolean();
-
-        if (await adminCheckDoc === true) {
-            isAdmin = true;
-            return isAdmin;
+        if (!user) {
+            return false;
         }
 
-        else{
-            isAdmin = false;
-            return isAdmin;
-        }
+        return user.get('isAdmin') === true;
     }
-
 
     // Makes any player an administrator with -makeadmin [@username] ?[password] (Password is optional. If you are already an admin you don't need to enter it.)
     async makeAdmin(id: string, password?: string) {
+        const targetPlayerId = id.replace(/[!@<>]/g, '');
+        const targetPlayer = await Player.findOne({ id: targetPlayerId }).exec();
 
-        let pass = password;
-        let playerID = id;
+        if (password && password !== process.env.ADMIN_PASSWORD) {
+            this.message.channel.send(makeNotAdminMessage(this.message.author.username));
 
-        const author = await this.message.author.username;
-
-        const args = playerID.replace(/[!@<>]/g,'');
-
-        if (await this.adminCheck() === true || pass === 'abc123') {
-
-            const change = await Player.updateOne(  { "id": args}, // Filter
-            {$set: {"admin": true}}, // Update
-            );
-
-            this.message.channel.send(makeAdminMessage(id));
             return;
-         }
-         else{
-            this.message.channel.send(makeNotAdminMessage(author));
-         }
+        }
 
+        if (!password && !await this.isAdmin()) {
+            this.message.channel.send(makeNotAdminMessage(this.message.author.username));
+
+            return;
+        }
+
+        if (!targetPlayer) {
+            return;
+        }
+
+        await targetPlayer.makeAdmin();
+
+        this.message.channel.send(makeAdminMessage(id));
     }
 
     // Clears any adventure currently on the board
     async clearAdventure() {
-        
-        const author = await this.message.author.username;
-
-        if (await this.adminCheck() === true){
-
-            if (this.guild.isCurrentlyAdventuring()) {
-                this.guild.stopAdventure();
-                this.message.channel.send(makeAdventureResetMessage());
-            }
-            else{
-                this.message.channel.send(makeAdventureNotResetMessage());
-            }
-            
-        }
-        else{
-            this.message.channel.send(makeNotAdminMessage(author));
+        if (!await this.isAdmin()) {
+            this.message.channel.send(makeNotAdminMessage(this.message.author.username));
         }
 
-        
+        if (!this.guild.isCurrentlyAdventuring()) {
+            this.message.channel.send(makeAdventureNotResetMessage());
+
+            return;
+        }
+
+        await this.guild.stopAdventure();
+        this.message.channel.send(makeAdventureResetMessage());
     }
 
     // Give any player currency using -addcur [amount] [@username]
     async addCurrency(amount: number, id: string) {
-        
-        let cur = amount;
-        let playerID = id;
+        const targetPlayerId = id.replace(/[!@<>]/g, '');
+        const targetPlayer = await Player.findOne({ id: targetPlayerId }).exec();
 
-        const author = await this.message.author.username;
-   
-        const args = playerID.replace(/[!@<>]/g,'');
+        if (!targetPlayer) {
+            return;
+        }
 
-        let currentDoc = await Player.findOne({ id: args }).exec();
-        let currentCurrency = await currentDoc?.get('currency');
+        if (!await this.isAdmin()) {
+            this.message.channel.send(makeNotAdminMessage(this.message.author.username));
+            return;
+        }
 
+        await targetPlayer.addCurrency(amount);
 
-            if (await this.adminCheck() === true)
-            {
-                const change = await Player.updateOne(  { "id": args}, // Filter
-                {$set: {"currency": Number(cur) + Number(currentCurrency)}}, // Update
-                );
-
-                let newDoc = await Player.findOne({ id: args }).exec();
-                let newCurrency = await newDoc?.get('currency');
-
-                this.message.channel.send(makeCurrencyAddedMessage(id, newCurrency));
-                return;
-            }
-            else{
-                this.message.channel.send(makeNotAdminMessage(author));
-                return;
-            }
-
+        this.message.channel.send(makeCurrencyAddedMessage(id, targetPlayer.get('currency')));
     }
 
     // Change any players Level
     async changeLevel(level: number, id: string) {
-        
-        let desiredLevel = level;
-        let playerID = id;
+        const author = this.message.author.username;
 
-        const author = await this.message.author.username;
-   
-        const args = playerID.replace(/[!@<>]/g,'');
+        const targetPlayerId = id.replace(/[!@<>]/g, '');
+        const targetPlayer = await Player.findOne({ id: targetPlayerId }).exec();
 
-        let currentDoc = await Player.findOne({ id: args }).exec();
-        let currentLevel = await currentDoc?.get('level');
+        if (!targetPlayer) {
+            return;
+        }
 
+        if (!await this.isAdmin()) {
+            this.message.channel.send(makeNotAdminMessage(author));
+            return;
+        }
 
-            if (await this.adminCheck() === true)
-            {
-                const change = await Player.updateOne(  { "id": args}, // Filter
-                {$set: {"level": desiredLevel}}, // Update
-                );
+        await targetPlayer.setLevel(level);
 
-                let newDoc = await Player.findOne({ id: args }).exec();
-                let newLevel = await newDoc?.get('level');
-
-                this.message.channel.send(makeLevelChangedMessage(id, newLevel));
-                return;
-            }
-            else{
-                this.message.channel.send(makeNotAdminMessage(author));
-                return;
-            }
-
+        this.message.channel.send(makeLevelChangedMessage(id, level));
     }
 
     // Change any players rebirth level
-    async changeRebirths(level: number, id: string) {
-        
-        let desiredRebirthLevel = level;
-        let playerID = id;
+    async changeRebirths(rebirths: number, id: string) {
+        const targetPlayerId = id.replace(/[!@<>]/g, '');
+        const targetPlayer = await Player.findOne({ id: targetPlayerId }).exec();
 
-        const author = await this.message.author.username;
-   
-        const args = playerID.replace(/[!@<>]/g,'');
+        if (!await this.isAdmin() || !targetPlayer) {
+            this.message.channel.send(makeNotAdminMessage(this.message.author.username));
+            return;
+        }
 
-        let currentDoc = await Player.findOne({ id: args }).exec();
-        let currentLevel = await currentDoc?.get('rebirths');
+        await targetPlayer.setRebirths(rebirths);
 
-
-            if (await this.adminCheck() === true)
-            {
-                const change = await Player.updateOne(  { "id": args}, // Filter
-                {$set: {"rebirths": desiredRebirthLevel}}, // Update
-                );
-
-                let newDoc = await Player.findOne({ id: args }).exec();
-                let newRebirthLevel = await newDoc?.get('rebirths');
-
-                this.message.channel.send(makeRebirthsChangedMessage(id, newRebirthLevel));
-                return;
-            }
-            else{
-                this.message.channel.send(makeNotAdminMessage(author));
-                return;
-            }
-
+        this.message.channel.send(makeRebirthsChangedMessage(id, rebirths));
     }
 
     // Reset all cooldowns (UNFINISHED)
     async resetCooldowns() {
-        
+        if (!await this.isAdmin()) {
+            this.message.channel.send(makeNotAdminMessage(this.message.author.username));
+            return;
+        }
 
+        await Player.updateMany({ "hasUsedAbility": true },
+            { $set: { "hasUsedAbility": false } },
+        );
 
-        const author = await this.message.author.username;
-   
-
-            if (await this.adminCheck() === true)
-            {
-                const change = await Player.updateMany(  { "hasUsedAbility": true}, // Filter
-                {$set: {"hasUsedAbility": false}}, // Update
-                );
-
-                this.message.channel.send(makeCooldownsResetMessage());
-                return;
-            }
-            else{
-                this.message.channel.send(makeNotAdminMessage(author));
-                return;
-            }
-
+        this.message.channel.send(makeCooldownsResetMessage());
     }
 
 }
