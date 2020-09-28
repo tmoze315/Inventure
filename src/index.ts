@@ -1,16 +1,18 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { Message, Client } from 'discord.js';
+import { Message, Client, Guild } from 'discord.js';
 import { connect } from 'mongoose';
 import PlayerService from './services/PlayerService';
 import availableCommands from './config/available-commands';
+import { Guild as GuildModel } from './models/Guild';
 
 (async () => {
     await connect('mongodb://127.0.0.1:27017/inventure', {
         useNewUrlParser: true,
         useFindAndModify: false,
         useUnifiedTopology: true,
+        useCreateIndex: true,
     });
 
     // Create an instance of a Discord client
@@ -26,6 +28,24 @@ import availableCommands from './config/available-commands';
 
         if (!message.content.startsWith(prefix) || message.author.bot) {
             return;
+        }
+
+        let guild: Guild | null = message.guild;
+
+        if (!guild) {
+            return;
+        }
+
+        let existingGuild = await GuildModel.findOne({ id: guild.id }).exec();
+
+        if (!existingGuild) {
+            const newGuild = new GuildModel({
+                id: guild.id,
+                currentAdventure: null,
+                lastAdventure: null,
+            });
+
+            existingGuild = await newGuild.save();
         }
 
         const args = message.content.slice(prefix.length).trim().split(/ +/g);
@@ -54,9 +74,9 @@ import availableCommands from './config/available-commands';
         }
 
         // Create the controller, so we have a reference to the message available at all times
-        const commandInstance = new route.class(message);
+        const commandInstance = new route.class(message, existingGuild);
 
-        commandInstance[route.method](args);
+        commandInstance[route.method](...args);
     });
 
     // Log our bot in using the token from https://discord.com/developers/applications
