@@ -67,6 +67,7 @@ class AdventureCommands extends BaseCommands {
             return true;
         };
 
+
         const adventureBattleMessage = makeAdventureBattleMessage(enemy, this.message.author.username);
         const message: Message = await this.message.channel.send(adventureBattleMessage);
 
@@ -89,6 +90,7 @@ class AdventureCommands extends BaseCommands {
 
         return reactions;
     }
+
 
     async handleEndOfAdventure(reactions: Collection<String, MessageReaction>) {
         const attackingUsers: Array<User> = [];
