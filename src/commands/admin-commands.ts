@@ -30,7 +30,8 @@ class AdminCommands extends BaseCommands {
             return isAdmin;
         }
     }
-    //Makes any player an administrator with -makeadmin [@username] ?[password] (Password is optional. If you are already an admin you don't need to enter it.)
+
+    // Makes any player an administrator with -makeadmin [@username] ?[password] (Password is optional. If you are already an admin you don't need to enter it.)
     async makeAdmin(id: string, password?: string) {
 
         let pass = password;
@@ -54,7 +55,8 @@ class AdminCommands extends BaseCommands {
          }
 
     }
-    //Clears any adventure currently on the board
+
+    // Clears any adventure currently on the board
     async clearAdventure() {
         
         const author = await this.message.author.username;
@@ -78,7 +80,7 @@ class AdminCommands extends BaseCommands {
     }
 
 
-    //Give any player currency using -addcur [amount] [@username]
+    // Give any player currency using -addcur [amount] [@username]
     async addCurrency(amount: number, id: string) {
         
         let cur = amount;
@@ -111,6 +113,7 @@ class AdminCommands extends BaseCommands {
 
     }
 
+    // Change any players Level
     async changeLevel(level: number, id: string) {
         
         let desiredLevel = level;
@@ -143,6 +146,7 @@ class AdminCommands extends BaseCommands {
 
     }
 
+    // Change any players rebirth level
     async changeRebirths(level: number, id: string) {
         
         let desiredRebirthLevel = level;
@@ -175,6 +179,7 @@ class AdminCommands extends BaseCommands {
 
     }
 
+    // Reset all cooldowns (UNFINISHED)
     async resetCooldowns() {
         
 
