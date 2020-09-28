@@ -1,4 +1,4 @@
-import { Message, CollectorFilter, Collection, MessageReaction } from "discord.js";
+import { Message, CollectorFilter, Collection, MessageReaction, User } from "discord.js";
 import BaseCommands from "./base-commands";
 import { differenceInMilliseconds } from 'date-fns';
 import { makeCanAdventureMessage } from "../messages/can-adventure";
@@ -7,6 +7,9 @@ import { makeCurrentlyAdventuringMessage } from "../messages/currently-adventuri
 import { makeAdventureBattleMessage } from "../messages/adventure-battle";
 import { makeTimeRemainingMessage } from "../messages/time-remaining";
 import { makeAdventureResults } from "../messages/adventure-results";
+import EnemyService from "../services/EnemyService";
+import { IEnemy } from "../data/enemies";
+import { AdventureResult } from "../models/AdventureResult";
 
 class AdventureCommands extends BaseCommands {
     // stats([first, last]: [string?, string?]) {
@@ -39,9 +42,9 @@ class AdventureCommands extends BaseCommands {
     }
 
     private async startAdventure(): Promise<Collection<String, MessageReaction>> {
-        this.guild.startAdventure('battle');
+        const enemy: IEnemy = await EnemyService.getRandomEnemy();
 
-        // TODO: Actually pick a random monster
+        this.guild.startAdventure('battle');
 
         const userReactions: Array<any> = [];
 
@@ -59,11 +62,14 @@ class AdventureCommands extends BaseCommands {
             userReactions[user.id] = reaction;
 
             // TODO: Check player has "started". If they haven't remove their reaction and DM them
+            // TODO: Handle the case where a player removes their own emoji
 
             return true;
         };
 
-        const message: Message = await this.message.channel.send(makeAdventureBattleMessage(this.message.author.username));
+
+        const adventureBattleMessage = makeAdventureBattleMessage(enemy, this.message.author.username);
+        const message: Message = await this.message.channel.send(adventureBattleMessage);
 
         message.react('⚔️');
         message.react('✨');
@@ -71,24 +77,60 @@ class AdventureCommands extends BaseCommands {
         message.react('🙏');
         message.react('🏃‍♂️');
 
-        // TODO: Use the time duration from the monster
-        const timerMessage: Message = await this.message.channel.send(makeTimeRemainingMessage('2m 00s', 'DARK_GREEN'));
-        await this.countdownMinutes(2, timerMessage);
+        const duration = enemy.battleDurationMinutes;
 
-        // 2 mins = 120000
-        const reactions = await message.awaitReactions(adventureEmojisFilter, { time: 120000 });
+        const timerMessage: Message = await this.message.channel.send(makeTimeRemainingMessage(`${duration}m 00s`, 'DARK_GREEN'));
+        await this.countdownMinutes(duration, timerMessage);
+
+        // const durationInMiliseconds = duration * 60000;
+        const durationInMiliseconds = 0.1 * 60000;
+        const reactions = await message.awaitReactions(adventureEmojisFilter, { time: durationInMiliseconds });
 
         message.delete();
 
         return reactions;
     }
 
-    handleEndOfAdventure(reactions: Collection<String, MessageReaction>) {
-        console.log(reactions);
 
-        makeAdventureResults
+    async handleEndOfAdventure(reactions: Collection<String, MessageReaction>) {
+        const attackingUsers: Array<User> = [];
+        const spellUsers: Array<User> = [];
 
-        // TODO: Be clever about this. There's a limit of 25 "fields". So we may want to just put this into
+        reactions.forEach((reaction: MessageReaction, emoji: String) => {
+            const totalReactions = reaction?.count || 0;
+
+            // Ignore the bot's reaction
+            if (totalReactions <= 1) {
+                return;
+            }
+
+            const users = reaction.users.cache.filter((user: any): boolean => {
+                return !user.bot;
+            }).array();
+
+            if ('⚔️' === emoji) {
+                attackingUsers.push(...users);
+            } else if ('✨' === emoji) {
+                spellUsers.push(...users);
+            }
+        });
+
+        // TODO: Make sure we only count one reaction from each user
+
+        // GET BASE ATTACK
+
+        // let damage = attackingUsers.
+
+        // const result = new AdventureResult({
+        //     damage: Math.floor(Math.random() * 100),
+        //     totalParticipants: attackingUsers.length + spellUsers.length,
+        //     wasSuccessful: true,
+        // });
+        // 
+        // await result.save();
+
+        // Did we actually win?
+
         const adventureResultsMessage = makeAdventureResults();
         this.message.channel.send(adventureResultsMessage);
 

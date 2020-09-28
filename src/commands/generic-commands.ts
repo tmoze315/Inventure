@@ -45,6 +45,7 @@ class GenericCommands extends BaseCommands {
         if (!player) {
             return;
         }
+
         else if(other == null){
             this.message.channel.send(makeStatsMessage(player));
         }
