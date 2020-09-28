@@ -5,6 +5,7 @@ interface IPlayer extends Document {
     id: string,
     guildId: string,
     username: string,
+    admin: Boolean,
     class: string,
     background: string,
     experience: number,
@@ -19,6 +20,7 @@ interface IPlayer extends Document {
     getMaxLevel: Function,
     getStat: Function,
     getSkillpoint: Function,
+    getIdFromName: Function,
 }
 
 const PlayerSchema = new Schema({
@@ -29,7 +31,13 @@ const PlayerSchema = new Schema({
     guildId: {
         type: String,
     },
-    username: String,
+    username: {
+        type: String,
+    },
+    admin: {
+        type: Boolean,
+        default: false
+    },
     class: {
         type: String,
         default: null,
@@ -202,6 +210,12 @@ PlayerSchema.methods.getRebirths = function () {
 
 PlayerSchema.methods.getMaxLevel = function () {
     return this.get('maxLevel') || 1;
+};
+
+PlayerSchema.methods.getIdFromName = function (id: string) {
+    let idSymbol = id;
+    let idNoSymbol = id.replace(/[!@<>]/g,'');
+    return idNoSymbol;
 };
 
 

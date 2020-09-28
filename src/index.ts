@@ -76,7 +76,7 @@ import { Guild as GuildModel } from './models/Guild';
         // Create the controller, so we have a reference to the message available at all times
         const commandInstance = new route.class(message, existingGuild);
 
-        commandInstance[route.method](args);
+        commandInstance[route.method](...args);
     });
 
     // Log our bot in using the token from https://discord.com/developers/applications
