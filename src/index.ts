@@ -64,7 +64,7 @@ import { IPlayer, Player } from './models/Player';
             return;
         }
 
-        if (player?.isBanned()) {
+        if (player?.hasBeenBanned()) {
             message.channel.send(`Oops, it looks like you're banned. If you believe this is a mistake, please speak with an administrator.`);
             return;
         }

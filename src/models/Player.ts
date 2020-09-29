@@ -21,7 +21,7 @@ interface IPlayer extends Document {
     getStat: Function,
     getSkillpoint: Function,
     getIdFromName: Function,
-    isBanned: Function,
+    hasBeenBanned: Function,
     setExperience: Function,
     setLevel: Function,
     setRebirths: Function,
@@ -45,6 +45,10 @@ const PlayerSchema = new Schema({
         type: String,
     },
     isAdmin: {
+        type: Boolean,
+        default: false
+    },
+    isBanned: {
         type: Boolean,
         default: false
     },
@@ -239,7 +243,7 @@ PlayerSchema.methods.getIdFromName = function (id: string) {
     return id.replace(/[!@<>]/g, '');
 };
 
-PlayerSchema.methods.isBanned = function () {
+PlayerSchema.methods.hasBeenBanned = function () {
     return this.isBanned;
 };
 
@@ -256,6 +260,10 @@ PlayerSchema.methods.setExperience = function (xp: number) {
 };
 
 PlayerSchema.methods.giveExperience = function (xp: number) {
+    if (typeof xp === 'string') {
+        xp = parseInt(xp);
+    }
+
     this.xp += xp;
 
     return this.save();
@@ -268,6 +276,10 @@ PlayerSchema.methods.setLevel = function (level: number) {
 };
 
 PlayerSchema.methods.addCurrency = function (amount: number) {
+    if (typeof amount === 'string') {
+        amount = parseInt(amount);
+    }
+
     this.currency += amount;
 
     return this.save();

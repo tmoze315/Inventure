@@ -18,7 +18,7 @@ class EnemyService {
     static async getRandomEnemy(): Promise<IEnemy> {
         const statRange: StatRange = await EnemyService.getAppropriateStatRange();
 
-        const enemyPool: Array<IEnemy> = [];
+        let enemyPool: Array<IEnemy> = [];
 
         enemies.forEach((enemy: IEnemy) => {
             const isWithinSuitableRange = enemy.baseHp >= (statRange.min * 0.75) && enemy.baseHp <= (statRange.max * 1.2);
@@ -41,9 +41,11 @@ class EnemyService {
 
         const randomNumber = Math.floor(Math.random() * enemyPool.length);
 
-        const enemy = enemyPool[randomNumber];
+        if (enemyPool.length === 0) {
+            enemyPool = enemies;
+        }
 
-        console.log(enemy);
+        const enemy = enemyPool[randomNumber];
 
         const newEnemy = EnemyService.scaleStatsBasedOnWinPercentage(enemy, statRange.winPercentage);
 
