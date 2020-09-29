@@ -13,9 +13,7 @@ interface IPlayer extends Document {
     rebirths: number,
     currency: number,
     getLevel: Function,
-    setLevel: Function,
     getHeroClass: Function,
-    setHeroClass: Function,
     getHeroClassDescription: Function,
     getHeroClassThumbnail: Function,
     getRebirths: Function,
@@ -23,9 +21,16 @@ interface IPlayer extends Document {
     getStat: Function,
     getSkillpoint: Function,
     getIdFromName: Function,
+    isBanned: Function,
+    setExperience: Function,
+    setLevel: Function,
     setRebirths: Function,
+    setHeroClass: Function,
     addCurrency: Function,
+    giveExperience: Function,
     makeAdmin: Function,
+    ban: Function,
+    unban: Function,
 }
 
 const PlayerSchema = new Schema({
@@ -234,8 +239,24 @@ PlayerSchema.methods.getIdFromName = function (id: string) {
     return id.replace(/[!@<>]/g, '');
 };
 
+PlayerSchema.methods.isBanned = function () {
+    return this.isBanned;
+};
+
 PlayerSchema.methods.setRebirths = function (rebirths: number) {
     this.rebirths = rebirths;
+
+    return this.save();
+};
+
+PlayerSchema.methods.setExperience = function (xp: number) {
+    this.xp = xp;
+
+    return this.save();
+};
+
+PlayerSchema.methods.giveExperience = function (xp: number) {
+    this.xp += xp;
 
     return this.save();
 };
@@ -254,6 +275,18 @@ PlayerSchema.methods.addCurrency = function (amount: number) {
 
 PlayerSchema.methods.makeAdmin = function (amount: number) {
     this.isAdmin = true;
+
+    return this.save();
+};
+
+PlayerSchema.methods.ban = function () {
+    this.isBanned = true;
+
+    return this.save();
+};
+
+PlayerSchema.methods.unban = function () {
+    this.isBanned = false;
 
     return this.save();
 };

@@ -1,6 +1,6 @@
-import { MessageEmbed, EmbedFieldData } from "discord.js";
 import { makeClassNotSelectedMessage } from "../messages/class-not-selected";
 import { makeClassSelectedMessage } from "../messages/class-selected";
+import { makeInsufficientFundsClassNotSelectedMessage } from "../messages/insufficient-funds-class-not-selected";
 import { makeInvalidHeroclassMessage } from "../messages/invalid-heroclass";
 import { makeStartMessage } from "../messages/start-message";
 import { makeStatsMessage } from "../messages/stats";
@@ -13,7 +13,7 @@ class GenericCommands extends BaseCommands {
     // }
 
     async start() {
-        const player = await Player.findOne({ id: this.user.id }).exec();
+        const player: IPlayer | null = await Player.findOne({ id: this.user.id }).exec();
 
         if (player) {
             this.message.channel.send('Looks like you have already started your adventure!');
@@ -33,16 +33,16 @@ class GenericCommands extends BaseCommands {
     }
 
     async stats(playerId?: string) {
-        let player;
+        let targetPlayerId = this.message.author.id;
 
         if (playerId) {
-            const targetPlayerId = playerId?.replace(/[!@<>]/g, '');
-            player = await Player.findOne({ id: targetPlayerId }).exec();
-        } else {
-            player = await Player.findOne({ id: this.message.author.id }).exec();
+            targetPlayerId = playerId?.replace(/[!@<>]/g, '');
         }
 
+        const player: IPlayer | null = await Player.findOne({ id: targetPlayerId }).exec();
+
         if (!player) {
+            this.message.channel.send('Player not found. Please try again');
             return;
         }
 
@@ -51,15 +51,24 @@ class GenericCommands extends BaseCommands {
 
     // Lets players select their Heroclass
     async selectHeroclass(heroclass: string) {
-        const player = await Player.findOne({ id: this.message.author.id }).exec();
+        const player: IPlayer | null = await Player.findOne({ id: this.message.author.id }).exec();
 
         if (!player) {
+            this.message.channel.send('Player not found. Please try again');
             return;
         }
 
         if (player.get('level') < 10 && player.get('rebirths') < 2) {
             this.message.channel.send(makeClassNotSelectedMessage(player.get('username')));
 
+            return;
+        }
+
+        const currentCurrency = player.get('currency');
+        const costToChangeHeroClass = player.get('rebirths') * 15000;
+
+        if (currentCurrency < costToChangeHeroClass) {
+            this.message.channel.send(makeInsufficientFundsClassNotSelectedMessage(player.get('username'), costToChangeHeroClass));
             return;
         }
 
