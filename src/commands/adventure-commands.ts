@@ -90,7 +90,6 @@ class AdventureCommands extends BaseCommands {
         return reactions;
     }
 
-
     async handleEndOfAdventure(reactions: Collection<String, MessageReaction>) {
         const attackingUsers: Array<User> = [];
         const spellUsers: Array<User> = [];

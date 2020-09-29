@@ -8,6 +8,10 @@ export default {
     heroclass: { class: GenericCommands, method: 'selectHeroclass' },
     adventure: { class: AdventureCommands, method: 'adventure' },
     a: { class: AdventureCommands, method: 'adventure' },
+
+    // Admin
+    ban: { class: AdminCommands, method: 'ban' },
+    unban: { class: AdminCommands, method: 'unban' },
     clear: { class: AdminCommands, method: 'clearAdventure' },
     // Change this to "-give <currency|loot> @player"
     addcur: { class: AdminCommands, method: 'addCurrency' },
@@ -15,4 +19,6 @@ export default {
     changelevel: { class: AdminCommands, method: 'changeLevel' },
     changerebirths: { class: AdminCommands, method: 'changeRebirths' },
     resetcooldowns: { class: AdminCommands, method: 'resetCooldowns' },
+    setxp: { class: AdminCommands, method: 'setExperience' },
+    givexp: { class: AdminCommands, method: 'giveExperience' },
 }

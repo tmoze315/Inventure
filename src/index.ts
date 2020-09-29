@@ -6,6 +6,7 @@ import { connect } from 'mongoose';
 import PlayerService from './services/PlayerService';
 import availableCommands from './config/available-commands';
 import { Guild as GuildModel } from './models/Guild';
+import { IPlayer, Player } from './models/Player';
 
 (async () => {
     await connect('mongodb://127.0.0.1:27017/inventure', {
@@ -55,14 +56,17 @@ import { Guild as GuildModel } from './models/Guild';
             return;
         }
 
-        if ('start' !== command) {
-            const player = await PlayerService.getCurrentPlayer(message.author);
+        const player: IPlayer | null = await PlayerService.getCurrentPlayer(message.author);
 
-            if (!player) {
-                message.channel.send(`Oops, it looks like you haven't started your journey yet. Create your character with \`${prefix}start\``);
+        if ('start' !== command && !player) {
+            message.channel.send(`Oops, it looks like you haven't started your journey yet. Create your character with \`${prefix}start\``);
 
-                return;
-            }
+            return;
+        }
+
+        if (player?.hasBeenBanned()) {
+            message.channel.send(`Oops, it looks like you're banned. If you believe this is a mistake, please speak with an administrator.`);
+            return;
         }
 
         // Fine the matching "route" (aka which commands file and method to call)

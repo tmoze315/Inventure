@@ -13,9 +13,7 @@ interface IPlayer extends Document {
     rebirths: number,
     currency: number,
     getLevel: Function,
-    setLevel: Function,
     getHeroClass: Function,
-    setHeroClass: Function,
     getHeroClassDescription: Function,
     getHeroClassThumbnail: Function,
     getRebirths: Function,
@@ -23,9 +21,16 @@ interface IPlayer extends Document {
     getStat: Function,
     getSkillpoint: Function,
     getIdFromName: Function,
+    hasBeenBanned: Function,
+    setExperience: Function,
+    setLevel: Function,
     setRebirths: Function,
+    setHeroClass: Function,
     addCurrency: Function,
+    giveExperience: Function,
     makeAdmin: Function,
+    ban: Function,
+    unban: Function,
 }
 
 const PlayerSchema = new Schema({
@@ -40,6 +45,10 @@ const PlayerSchema = new Schema({
         type: String,
     },
     isAdmin: {
+        type: Boolean,
+        default: false
+    },
+    isBanned: {
         type: Boolean,
         default: false
     },
@@ -234,8 +243,28 @@ PlayerSchema.methods.getIdFromName = function (id: string) {
     return id.replace(/[!@<>]/g, '');
 };
 
+PlayerSchema.methods.hasBeenBanned = function () {
+    return this.isBanned;
+};
+
 PlayerSchema.methods.setRebirths = function (rebirths: number) {
     this.rebirths = rebirths;
+
+    return this.save();
+};
+
+PlayerSchema.methods.setExperience = function (xp: number) {
+    this.xp = xp;
+
+    return this.save();
+};
+
+PlayerSchema.methods.giveExperience = function (xp: number) {
+    if (typeof xp === 'string') {
+        xp = parseInt(xp);
+    }
+
+    this.xp += xp;
 
     return this.save();
 };
@@ -247,6 +276,10 @@ PlayerSchema.methods.setLevel = function (level: number) {
 };
 
 PlayerSchema.methods.addCurrency = function (amount: number) {
+    if (typeof amount === 'string') {
+        amount = parseInt(amount);
+    }
+
     this.currency += amount;
 
     return this.save();
@@ -254,6 +287,18 @@ PlayerSchema.methods.addCurrency = function (amount: number) {
 
 PlayerSchema.methods.makeAdmin = function (amount: number) {
     this.isAdmin = true;
+
+    return this.save();
+};
+
+PlayerSchema.methods.ban = function () {
+    this.isBanned = true;
+
+    return this.save();
+};
+
+PlayerSchema.methods.unban = function () {
+    this.isBanned = false;
 
     return this.save();
 };
