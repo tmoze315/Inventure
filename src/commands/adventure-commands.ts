@@ -7,13 +7,98 @@ import { makeCurrentlyAdventuringMessage } from "../messages/currently-adventuri
 import { makeAdventureBattleMessage } from "../messages/adventure-battle";
 import { makeTimeRemainingMessage } from "../messages/time-remaining";
 import { makeAdventureResults } from "../messages/adventure-results";
-import EnemyService from "../services/EnemyService";
-import { IEnemy } from "../data/enemies";
+import { AreaFactory, IArea } from "../areas/base-area";
+import { makeAdventureInProgressMessage } from "../messages/adventure-in-progress";
+import { makeAreaChangedMessage } from "../messages/area-changed";
+import { IEnemy } from "../interfaces/enemy";
+import { makeAreaNotFoundMessage, makeCannotTravelToAreaMessage } from "../messages/cannot-travel-to-area";
+import { makeChangeAreaConfirmationMessage } from "../messages/change-area-confirmation";
+import { makeTravelDeniedMessage } from "../messages/travel-denied";
 
 class AdventureCommands extends BaseCommands {
     // stats([first, last]: [string?, string?]) {
     // Example parameters
     // }
+
+    async changeArea(areaName: string) {
+        if (this.guild.isCurrentlyAdventuring()) {
+            return await this.message.channel.send(makeAdventureInProgressMessage());
+        }
+
+        const area = this.guild.findArea(areaName);
+
+        if (!area || !this.guild.canTravelToArea(areaName)) {
+            return await this.message.channel.send(makeCannotTravelToAreaMessage());
+        }
+
+        const message: Message = await this.message.channel.send(makeChangeAreaConfirmationMessage(this.message.author.username, area));
+
+        message.react('✅');
+        message.react('❌');
+
+        const userReactions: Array<any> = [];
+
+        const emojiFilter: CollectorFilter = async (reaction, user) => {
+            if (user.bot) {
+                return true;
+            }
+
+            const usersLastReaction = userReactions[user.id];
+
+            if (usersLastReaction) {
+                await usersLastReaction.users.remove(user.id);
+            }
+
+            userReactions[user.id] = reaction;
+
+            // TODO: Check player has "started". If they haven't remove their reaction and DM them
+            // TODO: Handle the case where a player removes their own emoji
+
+            return true;
+        };
+
+        const reactions = await message.awaitReactions(emojiFilter, { time: 30000 });
+
+        const approveTravel: Array<User> = [];
+        const denyTravel: Array<User> = [];
+
+        reactions.forEach((reaction: MessageReaction, emoji: String) => {
+            const totalReactions = reaction?.count || 0;
+
+            // Ignore the bot's reaction
+            if (totalReactions <= 1) {
+                return;
+            }
+
+            const users = reaction.users.cache.filter((user: any): boolean => {
+                return !user.bot;
+            }).array();
+
+            if ('✅' === emoji) {
+                approveTravel.push(...users);
+            } else if ('❌' === emoji) {
+                denyTravel.push(...users);
+            }
+        });
+
+        if (denyTravel.length > 0) {
+            this.message.channel.send(makeTravelDeniedMessage(area));
+
+            return;
+        }
+
+        try {
+            await this.guild.changeArea(areaName);
+
+            const area = await this.guild.getCurrentArea();
+
+            this.message.channel.send(makeAreaChangedMessage(area));
+        } catch (error) {
+            console.log(error);
+
+            this.message.channel.send(makeCannotTravelToAreaMessage());
+        }
+    }
 
     async adventure() {
         if (this.guild.isCurrentlyAdventuring()) {
@@ -37,11 +122,22 @@ class AdventureCommands extends BaseCommands {
 
         const reactions = await this.startAdventure();
 
+        if (!reactions) {
+            return;
+        }
+
         await this.handleEndOfAdventure(reactions);
     }
 
-    private async startAdventure(): Promise<Collection<String, MessageReaction>> {
-        const enemy: IEnemy = await EnemyService.getRandomEnemy();
+    private async startAdventure(): Promise<Collection<String, MessageReaction> | null> {
+        const area: IArea | null = this.guild.getCurrentArea();
+
+        if (!area) {
+            this.message.channel.send('Oops, it doesn\'t look like you are in an area. Travel somewhere with the `-area` command');
+            return null;
+        }
+
+        const enemy: IEnemy = area.getRandomEnemy();
 
         this.guild.startAdventure('battle');
 
@@ -67,7 +163,7 @@ class AdventureCommands extends BaseCommands {
         };
 
 
-        const adventureBattleMessage = makeAdventureBattleMessage(enemy, this.message.author.username);
+        const adventureBattleMessage = makeAdventureBattleMessage(area, enemy, this.message.author.username);
         const message: Message = await this.message.channel.send(adventureBattleMessage);
 
         message.react('⚔️');

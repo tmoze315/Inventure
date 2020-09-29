@@ -1,6 +1,7 @@
 import { Schema, model, Document, Types } from 'mongoose';
 import { addSeconds, isAfter } from 'date-fns';
 import AdventureConfig from '../config/adventure';
+import { AreaFactory, IArea } from '../areas/base-area';
 
 interface IGuild extends Document {
     id: String;
@@ -12,12 +13,17 @@ interface IGuild extends Document {
 
     currentAdventure: Object;
     lastAdventure: Object;
+    unlockedAreas: Array<string>;
 
     isCurrentlyAdventuring: Function;
     startAdventure: Function;
     stopAdventure: Function;
     canAdventure: Function;
     adventureCooldown: Function;
+    changeArea: Function;
+    getCurrentArea: Function;
+    canTravelToArea: Function,
+    findArea: Function,
 }
 
 const GuildSchema = new Schema({
@@ -37,6 +43,15 @@ const GuildSchema = new Schema({
     enemies: {
         type: Number,
         default: 1000,
+    },
+    currentArea: {
+        type: String,
+        default: 'redbay',
+        enum: ['dalelands', 'daggerford', 'dreg-marshes', 'redbay', 'the-lost-ruins', 'forest-of-angels', 'triggala-divide', 'kingdom-of-minas'],
+    },
+    unlockedAreas: {
+        type: [String],
+        default: ['dalelands'],
     },
     currentAdventure: {
         required: false,
@@ -101,7 +116,6 @@ GuildSchema.methods.startAdventure = function (type: String): Promise<any> {
 };
 
 GuildSchema.methods.stopAdventure = function (): Promise<any> {
-
     this.lastAdventure = {
         exists: true,
         type: this.currentAdventure.type,
@@ -112,11 +126,51 @@ GuildSchema.methods.stopAdventure = function (): Promise<any> {
         exists: false,
     };
 
+    return this.save();
+};
 
-    // this.markModified('timeEnded');
+GuildSchema.methods.changeArea = function (areaName: string): Promise<any> {
+    const area = this.findArea(areaName);
+
+    if (!area) {
+        throw new Error(`Area ${areaName} not found.`);
+    }
+
+    if (!this.canTravelToArea(area)) {
+        throw new Error(`Cannot travel to ${areaName}.`);
+    }
+
+    this.currentArea = area;
 
     return this.save();
 };
+
+GuildSchema.methods.getCurrentArea = function (): IArea | null {
+    return this.findArea(this.get('currentArea'));
+};
+
+GuildSchema.statics.findArea = function (areaName: string): IArea | null {
+    const supportedAreas = [
+        {
+            key: 'dalelands',
+            acceptedValues: ['dalelands'],
+        },
+    ];
+
+    const area = supportedAreas.find((supportedArea) => {
+        return areaName.toLowerCase().trim() in supportedArea.acceptedValues;
+    });
+
+    if (!area) {
+        return null;
+    }
+
+    return AreaFactory.getArea(area.key);
+}
+
+GuildSchema.statics.canTravelToArea = function (area: IArea): boolean {
+    return area.name in this.get('unlockedAreas');
+}
 
 const Guild = model<IGuild>('Guild', GuildSchema);
 
