@@ -3,10 +3,6 @@ import { IArea } from '../areas/base-area';
 import { IEnemy } from '../interfaces/enemy';
 
 const makeAdventureBattleMessage = (area: IArea, enemy: IEnemy, username: string) => {
-    if (enemy.type === 'boss') {
-        return makeBossMessage(area, enemy, username);
-    }
-
     if (enemy.type === 'mini-boss') {
         return makeMiniBossMessage(area, enemy, username);
     }
@@ -36,8 +32,8 @@ const makeMiniBossMessage = (area: IArea, enemy: IEnemy, username: string) => {
     const desc = [
         `The path ahead winds down into a valley below. **${username}** is excited to go see what could be found, but ${enemy.prefix} ${enemy.name} just landed in front of you glaring!`,
         ``,
-        `\`\`\`css`,
-        `[⚠️ Warning: Strong enemy detected! ⚠️]`,
+        `\`\`\`yaml`,
+        `[Warning: Strong enemy detected!]`,
         `\`\`\``,
         ``,
         `What will you do? You have ${enemy.battleDurationMinutes} minutes to decide.`,
@@ -49,28 +45,6 @@ const makeMiniBossMessage = (area: IArea, enemy: IEnemy, username: string) => {
     return new MessageEmbed()
         .setTitle(`${username} is feeling adventurous`)
         .setColor(area.miniBossColor)
-        .setDescription(desc.join('\n'))
-        .setFooter(`Location: ${area.name}`)
-        .setImage(enemy.image);
-};
-
-const makeBossMessage = (area: IArea, enemy: IEnemy, username: string) => {
-    const desc = [
-        `The path ahead winds down into a valley below. **${username}** is excited to go see what could be found, but ${enemy.prefix} ${enemy.name} just landed in front of you glaring!`,
-        ``,
-        `\`\`\`css`,
-        `[⚠️ Warning: EXTREMELY Strong enemy detected! ⚠️]`,
-        `\`\`\``,
-        ``,
-        `What will you do? You have ${enemy.battleDurationMinutes} minutes to decide.`,
-        ``,
-        `React with:`,
-        `**Fight (⚔️)** - **Spell (✨)** - **Persuade (🗣)** - **Run (🏃‍♂️)**`,
-    ];
-
-    return new MessageEmbed()
-        .setTitle(`${username} is feeling adventurous`)
-        .setColor(area.bossColor)
         .setDescription(desc.join('\n'))
         .setFooter(`Location: ${area.name}`)
         .setImage(enemy.image);

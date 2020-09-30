@@ -8,140 +8,13 @@ import { makeAdventureBattleMessage } from "../messages/adventure-battle";
 import { makeTimeRemainingMessage } from "../messages/time-remaining";
 import { makeAdventureResults } from "../messages/adventure-results";
 import { IArea } from "../areas/base-area";
-import { makeAdventureInProgressMessage } from "../messages/adventure-in-progress";
-import { makeAreaChangedMessage } from "../messages/area-changed";
 import { IEnemy } from "../interfaces/enemy";
-import { makeChangeAreaConfirmationMessage } from "../messages/change-area-confirmation";
-import { makeTravelDeniedMessage } from "../messages/travel-denied";
-import AreaService from "../services/AreaService";
-import { makeAreaHelpMessage } from "../messages/area-help";
 import { makeStandardMessage } from "../messages/standard-message";
-import { makeCurrentAreaMessage } from "../messages/current-area";
+import { makeAdventureInProgressMessage } from "../messages/adventure-in-progress";
+import { makeSummonBossConfirmationMessage } from "../messages/summon-boss-confirmation";
+import { makeSummonBossMessage } from "../messages/summon-boss";
 
 class AdventureCommands extends BaseCommands {
-    // stats([first, last]: [string?, string?]) {
-    // Example parameters
-    // }
-
-    async area() {
-        const area: IArea | null = this.guild.getCurrentArea();
-
-        if (!area) {
-            this.message.channel.send(makeStandardMessage('Sorry, you are not currently in any area', 'RED'));
-            return;
-        }
-
-        this.message.channel.send(makeCurrentAreaMessage(area));
-    }
-
-    async travel(areaName?: string) {
-        if (!areaName) {
-            this.message.channel.send(makeAreaHelpMessage(this.guild));
-            return;
-        }
-
-        if (this.guild.isCurrentlyAdventuring()) {
-            this.message.channel.send(makeAdventureInProgressMessage());
-            return;
-        }
-
-        const area: IArea | null = AreaService.findArea(areaName);
-
-        if (!area || !this.guild.canTravelToArea(area)) {
-            this.message.channel.send(makeStandardMessage('Sorry, that area either does not exist or you have not unlocked it yet', 'RED'));
-            return;
-        }
-
-        if (area.key === this.guild.get('currentArea')) {
-            this.message.channel.send(makeStandardMessage(`You are already in ${area.name}.`, 'GREEN'));
-            return;
-        }
-
-        if (!this.guild.canAfford(area.travelCost)) {
-            this.message.channel.send(makeStandardMessage(`Your guild cannot afford to travel to this location.`, 'RED'));
-            return;
-        }
-
-        const message: Message = await this.message.channel.send(makeChangeAreaConfirmationMessage(this.message.author.username, area, this.guild, '30s'));
-
-        await this.countdownSeconds(30,
-            (timeRemaining: string, color: string) => {
-                message.edit(makeChangeAreaConfirmationMessage(this.message.author.username, area, this.guild, timeRemaining));
-            },
-            () => {
-                message.delete();
-            }
-        );
-
-        message.react('✅');
-        message.react('❌');
-
-        const userReactions: Array<any> = [];
-
-        const emojiFilter: CollectorFilter = async (reaction, user) => {
-            if (user.bot) {
-                return true;
-            }
-
-            const usersLastReaction = userReactions[user.id];
-
-            if (usersLastReaction) {
-                await usersLastReaction.users.remove(user.id);
-            }
-
-            userReactions[user.id] = reaction;
-
-            // TODO: Check player has "started". If they haven't remove their reaction and DM them
-            // TODO: Handle the case where a player removes their own emoji
-
-            return true;
-        };
-
-        const reactions = await message.awaitReactions(emojiFilter, { time: 30000 });
-
-        const approveTravel: Array<User> = [];
-        const denyTravel: Array<User> = [];
-
-        reactions.forEach((reaction: MessageReaction, emoji: String) => {
-            const totalReactions = reaction?.count || 0;
-
-            // Ignore the bot's reaction
-            if (totalReactions <= 1) {
-                return;
-            }
-
-            const users = reaction.users.cache.filter((user: any): boolean => {
-                return !user.bot;
-            }).array();
-
-            if ('✅' === emoji) {
-                approveTravel.push(...users);
-            } else if ('❌' === emoji) {
-                denyTravel.push(...users);
-            }
-        });
-
-        if (denyTravel.length > 0 || approveTravel.length === 0) {
-            this.message.channel.send(makeTravelDeniedMessage(area));
-
-            return;
-        }
-
-        try {
-            await this.guild.changeArea(area);
-
-            await this.guild.pay(area.travelCost);
-
-            const currentArea = await this.guild.getCurrentArea();
-
-            this.message.channel.send(makeAreaChangedMessage(currentArea));
-        } catch (error) {
-            console.error(error);
-
-            this.message.channel.send(makeStandardMessage('Sorry, we were unable to travel to that location', 'RED'));
-        }
-    }
-
     async adventure() {
         if (this.guild.isCurrentlyAdventuring()) {
             return await this.message.channel.send(makeCurrentlyAdventuringMessage());
@@ -275,8 +148,30 @@ class AdventureCommands extends BaseCommands {
 
         // Did we actually win?
 
-        const adventureResultsMessage = makeAdventureResults();
+
+        // TODO make this work from Enemy
+        const won = Math.random() > 0.3;
+
+        const adventureResultsMessage = makeAdventureResults(won);
         this.message.channel.send(adventureResultsMessage);
+
+        const isMiniBoss = true;
+        const isBoss = true;
+
+        if (won && isMiniBoss) {
+            await this.guild.giveQuestItemForCurrentArea();
+
+            // TODO, pass this in
+            const currentArea = this.guild.getCurrentArea();
+            const questItems = this.guild.getQuestItemsForCurrentArea();
+
+            if (this.guild.canAttackBossInCurrentArea()) {
+
+                this.message.channel.send(makeStandardMessage(`Congratulations! You have collected enough ${currentArea.questItem} quest items (${questItems}/${currentArea.totalQuestItemsNeeded}). You may summon the area boss by using \`-boss\`.`));
+            } else {
+                this.message.channel.send(makeStandardMessage(`The enemy dropped one ${currentArea.questItem}. You now have (${questItems}/${currentArea.totalQuestItemsNeeded}) quest items.`));
+            }
+        }
 
         return this.guild.stopAdventure();
 
@@ -285,67 +180,95 @@ class AdventureCommands extends BaseCommands {
         // TODO: Handle rewards & losses
     }
 
-    // https://gist.github.com/adhithyan15/4350689
-    countdownMinutes(minutes: number, updateCallback: CallableFunction, endCallback: CallableFunction) {
-        let seconds: number = 60;
-        let mins: number = minutes;
+    async summonAreaBoss() {
+        console.log('here');
 
-        const tick = () => {
-            let currentMinutes = mins - 1
+        const area: IArea | null = this.guild.getCurrentArea();
 
-            seconds--;
-
-            if (seconds % 5 === 0) {
-                const remainingTime = `${currentMinutes.toString()}m ${(seconds < 10 ? 0 : '')}${seconds}s`;
-                let color = 'GREEN';
-
-                if (currentMinutes <= 0 && seconds > 30 && seconds < 60) {
-                    color = 'ORANGE';
-                } else if (currentMinutes <= 0 && seconds <= 30) {
-                    color = 'RED';
-                }
-
-                updateCallback(remainingTime, color);
-            }
-
-            if (seconds > 0) {
-                setTimeout(tick, 1000);
-            } else if (minutes > 1) {
-                this.countdownMinutes(mins - 1, updateCallback, endCallback);
-            } else if (currentMinutes <= 0 && seconds <= 0) {
-                return endCallback();
-            }
+        if (!area) {
+            this.message.channel.send(makeStandardMessage('Sorry, you are not currently in any area', 'RED'));
+            return;
         }
 
-        tick();
-    }
-
-    countdownSeconds(seconds: number, updateCallback: CallableFunction, endCallback: CallableFunction) {
-        const tick = () => {
-            seconds--;
-
-            if (seconds % 5 === 0) {
-                const remainingTime = `${(seconds < 10 ? 0 : '')}${seconds}s`;
-
-                let color = 'GREEN';
-
-                if (seconds <= 0 && seconds > 30 && seconds < 45) {
-                    color = 'ORANGE';
-                } else if (seconds <= 0 && seconds <= 30) {
-                    color = 'RED';
-                }
-
-                updateCallback(remainingTime, color);
-            }
-
-            if (seconds > 0) {
-                setTimeout(tick, 1000);
-            } else {
-                return endCallback();
-            }
+        if (this.guild.isCurrentlyAdventuring()) {
+            this.message.channel.send(makeAdventureInProgressMessage());
+            return;
         }
 
-        tick();
+        await this.guild.startAdventure();
+
+        const secondsToWait = 45;
+
+        await this.message.channel.send(makeSummonBossMessage(this.message.author.username, area));
+
+        const message: Message = await this.message.channel.send(makeSummonBossConfirmationMessage(area, `${secondsToWait}s`));
+
+        await this.countdownSeconds(secondsToWait,
+            (timeRemaining: string, color: string) => {
+                message.edit(makeSummonBossConfirmationMessage(area, timeRemaining));
+            },
+            () => {
+                message.delete();
+            }
+        );
+
+        message.react('✅');
+        message.react('❌');
+
+        const userReactions: Array<any> = [];
+
+        const emojiFilter: CollectorFilter = async (reaction, user) => {
+            if (user.bot) {
+                return true;
+            }
+
+            const usersLastReaction = userReactions[user.id];
+
+            if (usersLastReaction) {
+                await usersLastReaction.users.remove(user.id);
+            }
+
+            userReactions[user.id] = reaction;
+
+            // TODO: Check player has "started". If they haven't remove their reaction and DM them
+            // TODO: Handle the case where a player removes their own emoji
+
+            return true;
+        };
+
+        const reactions = await message.awaitReactions(emojiFilter, { time: secondsToWait * 1000 });
+
+        const approveList: Array<User> = [];
+        const denyList: Array<User> = [];
+
+        reactions.forEach((reaction: MessageReaction, emoji: String) => {
+            const totalReactions = reaction?.count || 0;
+
+            // Ignore the bot's reaction
+            if (totalReactions <= 1) {
+                return;
+            }
+
+            const users = reaction.users.cache.filter((user: any): boolean => {
+                return !user.bot;
+            }).array();
+
+            if ('✅' === emoji) {
+                approveList.push(...users);
+            } else if ('❌' === emoji) {
+                denyList.push(...users);
+            }
+        });
+
+        if (denyList.length > 0 || approveList.length === 0) {
+            this.message.channel.send(makeStandardMessage(`You decided not to summon the area boss this time around. Probably a wise decision.`, 'DARK_RED'));
+
+            return;
+        }
+
+        await this.guild.useQuestItemsForCurrentArea();
+
+        // const results = await area.summonBoss();
     }
 }
 

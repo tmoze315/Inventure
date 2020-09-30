@@ -1,7 +1,7 @@
 import { Constructable } from "discord.js";
 import { IArea } from "../areas/base-area";
 import { DaggerfordArea } from "../areas/daggerford/area";
-import { DalelandsArea } from "../areas/dalelands/area";
+import { BayhillArea } from "../areas/bayhill/area";
 import { DregMarshesArea } from "../areas/dreg-marshes/area";
 import { ForestOfAngelsArea } from "../areas/forest-of-angels/area";
 import { KingdomOfMinasArea } from "../areas/kingdom-of-minas/area";
@@ -17,9 +17,9 @@ interface Area {
 
 export default [
     <Area>{
-        key: 'dalelands',
-        class: DalelandsArea,
-        acceptedValues: ['dalelands'],
+        key: 'bayhill',
+        class: BayhillArea,
+        acceptedValues: ['bayhill', 'bay hill', 'bay-hill'],
     },
     <Area>{
         key: 'daggerford',

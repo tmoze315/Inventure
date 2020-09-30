@@ -1,7 +1,8 @@
-import { IEnemy } from "../interfaces/enemy";
+import { IBoss, IEnemy } from "../interfaces/enemy";
 
 interface IArea {
     getRandomEnemy(): IEnemy;
+    getBoss(): IBoss;
 
     key: string;
     name: string;
@@ -11,6 +12,8 @@ interface IArea {
     bossColor: string;
     travelCost: number;
     emoji: string;
+    questItem: string;
+    totalQuestItemsNeeded: number;
 }
 
 /**
@@ -30,9 +33,13 @@ abstract class BaseArea implements IArea {
     public abstract travelCost: number;
 
     public emoji: string = '🗺';
+    public questItem: string = '🗝';
+    public totalQuestItemsNeeded: number = 5;
 
     protected abstract miniBossSpawnsOneIn: number;
     protected abstract getEnemyPool(): Array<IEnemy>;
+
+    public abstract getBoss(): IBoss;
 
     getRandomEnemy(): IEnemy {
         const fullEnemyPool: Array<IEnemy> = this.getEnemyPool();
@@ -40,10 +47,6 @@ abstract class BaseArea implements IArea {
 
         // Do not spawn bosses
         fullEnemyPool.forEach((enemy) => {
-            if (enemy.type === 'boss') {
-                return;
-            }
-
             if (enemy.type === 'mini-boss') {
                 enemyPool.push(enemy);
                 return;

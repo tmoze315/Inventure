@@ -1,14 +1,25 @@
 import { EmbedFieldData } from 'discord.js';
 import { MessageEmbed } from 'discord.js';
 
-const makeAdventureResults = () => {
-    const desc = [
+const makeAdventureResults = (won: boolean) => {
+    let color = 'DARK_GREEN';
+
+    let desc = [
         `The group killed the Ascended Cave Lion (1,267/892).`,
         `TODO: Make this clever`,
     ];
 
+    if (!won) {
+        color = 'DARK_RED';
+
+        desc = [
+            `The group got killed (167/892).`,
+            `TODO: Make this clever`,
+        ];
+    }
+
     return new MessageEmbed()
-        .setColor('DARK_GREEN') // WIN/LOSE colours
+        .setColor(color) // WIN/LOSE colours
         .setDescription(desc.join('\n'))
         .addFields([
             <EmbedFieldData>{

@@ -1,5 +1,4 @@
 import { IArea } from "../areas/base-area";
-import { DalelandsArea } from "../areas/dalelands/area";
 import supportedAreas from '../config/areas';
 
 class AreaService {

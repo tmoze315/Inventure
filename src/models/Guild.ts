@@ -27,6 +27,10 @@ interface IGuild extends Document {
     getUnlockedAreas: Function,
     pay: Function,
     canAfford: Function,
+    giveQuestItemForCurrentArea: Function,
+    canAttackBossInCurrentArea: Function,
+    useQuestItemsForCurrentArea: Function,
+    getQuestItemsForCurrentArea: Function,
 }
 
 const GuildSchema = new Schema({
@@ -49,12 +53,16 @@ const GuildSchema = new Schema({
     },
     currentArea: {
         type: String,
-        default: 'dalelands',
-        enum: ['dalelands', 'daggerford', 'dreg-marshes', 'redbay', 'the-lost-ruins', 'forest-of-angels', 'triggala-divide', 'kingdom-of-minas'],
+        default: 'bayhill',
+        enum: ['bayhill', 'daggerford', 'dreg-marshes', 'redbay', 'the-lost-ruins', 'forest-of-angels', 'triggala-divide', 'kingdom-of-minas'],
     },
     unlockedAreas: {
         type: [String],
-        default: ['dalelands'],
+        default: ['bayhill'],
+    },
+    questItems: {
+        type: Map,
+        of: Number,
     },
     currentAdventure: {
         required: false,
@@ -182,6 +190,43 @@ GuildSchema.methods.canAfford = function (amount: number) {
     }
 
     return this.currency >= amount;
+}
+
+GuildSchema.methods.getQuestItemsForCurrentArea = function () {
+    return this.get(`questItems.${this.currentArea}`) || 0;
+}
+
+GuildSchema.methods.giveQuestItemForCurrentArea = function () {
+    const currentQuestItems = this.getQuestItemsForCurrentArea();
+
+    this.set(`questItems.${this.currentArea}`, currentQuestItems + 1);
+
+    return this.save();
+}
+
+GuildSchema.methods.canAttackBossInCurrentArea = function (): boolean {
+    const currentArea: IArea | null = this.getCurrentArea();
+
+    if (!currentArea) {
+        return false;
+    }
+
+    return this.getQuestItemsForCurrentArea() >= currentArea.totalQuestItemsNeeded;
+}
+
+GuildSchema.methods.useQuestItemsForCurrentArea = function () {
+    const currentArea: IArea | null = this.getCurrentArea();
+
+    if (!currentArea) {
+        return false;
+    }
+
+    const currentQuestItems = this.get(`questItems.${currentArea.key}`) || 0;
+    const newQuertItems = currentQuestItems - currentArea.totalQuestItemsNeeded;
+
+    this.set(`questItems.${currentArea.key}`, newQuertItems);
+
+    return this.save();
 }
 
 const Guild = model<IGuild>('Guild', GuildSchema);

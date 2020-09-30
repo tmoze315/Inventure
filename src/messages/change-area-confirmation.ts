@@ -4,7 +4,7 @@ import { IGuild } from '../models/Guild';
 
 const makeChangeAreaConfirmationMessage = (username: string, area: IArea, guild: IGuild, timeRemaining: string) => {
     const desc = [
-        `This will cost your guild ${area.travelCost} gold. You currently have ${guild.get('currency')}`,
+        `This will cost your guild ${area.travelCost.toLocaleString()} gold. You currently have ${guild.get('currency').toLocaleString()} gold`,
         ``,
         `**About ${area.name}:**`,
         `${area.emoji} - _${area.description}_`,

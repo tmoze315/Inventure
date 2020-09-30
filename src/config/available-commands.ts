@@ -1,5 +1,6 @@
 import { AdminCommands } from '../commands/admin-commands';
 import { AdventureCommands } from '../commands/adventure-commands';
+import { AreaCommands } from '../commands/area-commands';
 import { GenericCommands } from '../commands/generic-commands';
 
 export default {
@@ -11,10 +12,13 @@ export default {
     // Adventuring Commands
     adventure: { class: AdventureCommands, method: 'adventure' },
     a: { class: AdventureCommands, method: 'adventure' },
-    travel: { class: AdventureCommands, method: 'travel' },
-    area: { class: AdventureCommands, method: 'area' },
+    boss: { class: AdventureCommands, method: 'summonAreaBoss' },
 
-    // Admin
+    // Travel/Area Commands
+    travel: { class: AreaCommands, method: 'travel' },
+    area: { class: AreaCommands, method: 'area' },
+
+    // Admin Commands
     ban: { class: AdminCommands, method: 'ban' },
     unban: { class: AdminCommands, method: 'unban' },
     clear: { class: AdminCommands, method: 'clearAdventure' },

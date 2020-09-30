@@ -55,15 +55,6 @@ const enemies = [
         type: 'mini-boss',
         battleDurationMinutes: 1,
     },
-    <IEnemy>{
-        name: 'Dreg Marshes - Bronze Dragon',
-        prefix: 'a',
-        baseHp: 260,
-        basePersuasionResistance: 250,
-        image: 'https://cdn.pixabay.com/photo/2017/01/13/07/57/dragon-1976596_960_720.jpg',
-        type: 'boss',
-        battleDurationMinutes: 1,
-    },
 ];
 
 export default enemies;
