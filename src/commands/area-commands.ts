@@ -27,6 +27,11 @@ class AreaCommands extends BaseCommands {
             return;
         }
 
+        if (this.guild.isLocked) {
+            this.message.channel.send(makeStandardMessage(`You cannot do that right now.`, 'DARK_RED'));
+            return;
+        }
+
         if (this.guild.isCurrentlyAdventuring()) {
             this.message.channel.send(makeAdventureInProgressMessage());
             return;
@@ -48,6 +53,8 @@ class AreaCommands extends BaseCommands {
             this.message.channel.send(makeStandardMessage(`Your guild cannot afford to travel to this location.`, 'RED'));
             return;
         }
+
+        await this.guild.lock();
 
         const secondsToWait = 45;
         const message: Message = await this.message.channel.send(makeChangeAreaConfirmationMessage(this.message.author.username, area, this.guild, `${secondsToWait}s`));
@@ -110,6 +117,7 @@ class AreaCommands extends BaseCommands {
         });
 
         if (denyList.length > 0 || approveList.length === 0) {
+            this.guild.unlock();
             this.message.channel.send(makeStandardMessage(`You decided not to travel to ${area.name}.`, 'DARK_RED'));
 
             return;
@@ -122,11 +130,17 @@ class AreaCommands extends BaseCommands {
             const currentArea = this.guild.getCurrentArea();
             const questItems = this.guild.getQuestItemsForCurrentArea();
 
-            this.message.channel.send(makeAreaChangedMessage(currentArea));
-            this.message.channel.send(makeStandardMessage(`You have collected enough (${questItems}/${currentArea.totalQuestItemsNeeded}) ${currentArea.questItem} quest items. You may summon the area boss by using \`-boss\`.`));
+            this.message.channel.send(makeAreaChangedMessage(currentArea, this.guild));
+
+            if (this.guild.canAttackBossInCurrentArea()) {
+                this.message.channel.send(makeStandardMessage(`You have collected enough (${questItems}/${currentArea.totalQuestItemsNeeded}) ${currentArea.questItem} quest items. You may summon the area boss by using \`-boss\`.`));
+            }
+
+            await this.guild.unlock();
         } catch (error) {
             console.error(error);
 
+            this.guild.unlock();
             this.message.channel.send(makeStandardMessage('Sorry, we were unable to travel to that location', 'RED'));
         }
     }

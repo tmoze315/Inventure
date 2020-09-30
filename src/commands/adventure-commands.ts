@@ -35,6 +35,13 @@ class AdventureCommands extends BaseCommands {
             return;
         }
 
+        if (this.guild.isLocked) {
+            this.message.channel.send(makeStandardMessage(`You cannot do that right now.`, 'DARK_RED'));
+            return;
+        }
+
+        await this.guild.lock();
+
         const reactions = await this.startAdventure();
 
         if (!reactions) {
@@ -42,6 +49,8 @@ class AdventureCommands extends BaseCommands {
         }
 
         await this.handleEndOfAdventure(reactions);
+
+        this.guild.unlock();
     }
 
     private async startAdventure(): Promise<Collection<String, MessageReaction> | null> {
@@ -148,7 +157,6 @@ class AdventureCommands extends BaseCommands {
 
         // Did we actually win?
 
-
         // TODO make this work from Enemy
         const won = Math.random() > 0.3;
 
@@ -156,7 +164,6 @@ class AdventureCommands extends BaseCommands {
         this.message.channel.send(adventureResultsMessage);
 
         const isMiniBoss = true;
-        const isBoss = true;
 
         if (won && isMiniBoss) {
             await this.guild.giveQuestItemForCurrentArea();
@@ -166,10 +173,9 @@ class AdventureCommands extends BaseCommands {
             const questItems = this.guild.getQuestItemsForCurrentArea();
 
             if (this.guild.canAttackBossInCurrentArea()) {
-
                 this.message.channel.send(makeStandardMessage(`Congratulations! You have collected enough ${currentArea.questItem} quest items (${questItems}/${currentArea.totalQuestItemsNeeded}). You may summon the area boss by using \`-boss\`.`));
             } else {
-                this.message.channel.send(makeStandardMessage(`The enemy dropped one ${currentArea.questItem}. You now have (${questItems}/${currentArea.totalQuestItemsNeeded}) quest items.`));
+                this.message.channel.send(makeStandardMessage(`The enemy dropped one ${currentArea.questItem}. You now have (${questItems}/${currentArea.totalQuestItemsNeeded}) ${currentArea.name} quest items.`));
             }
         }
 
@@ -181,8 +187,6 @@ class AdventureCommands extends BaseCommands {
     }
 
     async summonAreaBoss() {
-        console.log('here');
-
         const area: IArea | null = this.guild.getCurrentArea();
 
         if (!area) {
@@ -195,7 +199,17 @@ class AdventureCommands extends BaseCommands {
             return;
         }
 
-        await this.guild.startAdventure();
+        if (!this.guild.canAttackBossInCurrentArea()) {
+            this.message.channel.send(makeStandardMessage(`You have not collected enough ${area.questItem} quest items in ${area.name}. You currently have (${this.guild.getQuestItemsForCurrentArea()}/${area.totalQuestItemsNeeded})`, 'DARK_RED'));
+            return;
+        }
+
+        if (this.guild.isLocked) {
+            this.message.channel.send(makeStandardMessage(`You cannot do that right now.`, 'DARK_RED'));
+            return;
+        }
+
+        await this.guild.lock();
 
         const secondsToWait = 45;
 
@@ -266,8 +280,14 @@ class AdventureCommands extends BaseCommands {
             return;
         }
 
+        await this.guild.unlock();
+        await this.guild.startAdventure();
         await this.guild.useQuestItemsForCurrentArea();
 
+        console.log('Do things...');
+
+        await this.guild.stopAdventure();
+        await this.guild.unlock();
         // const results = await area.summonBoss();
     }
 }

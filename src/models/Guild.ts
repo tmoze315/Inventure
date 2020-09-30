@@ -11,12 +11,15 @@ interface IGuild extends Document {
     currency: Number;
     allies: Number;
     enemies: Number;
+    isLocked: boolean,
 
     currentAdventure: Object;
     lastAdventure: Object;
     unlockedAreas: Array<string>;
 
     isCurrentlyAdventuring: Function;
+    lock: Function,
+    unlock: Function,
     startAdventure: Function;
     stopAdventure: Function;
     canAdventure: Function;
@@ -91,10 +94,26 @@ const GuildSchema = new Schema({
             required: false,
         },
     },
+    isLocked: {
+        type: Boolean,
+        default: false,
+    }
 });
 
 GuildSchema.methods.isCurrentlyAdventuring = function () {
     return this.currentAdventure.exists === true;
+};
+
+GuildSchema.methods.lock = function () {
+    this.isLocked = true;
+
+    return this.save();
+};
+
+GuildSchema.methods.unlock = function () {
+    this.isLocked = false;
+
+    return this.save();
 };
 
 GuildSchema.methods.canAdventure = function (date: Date) {

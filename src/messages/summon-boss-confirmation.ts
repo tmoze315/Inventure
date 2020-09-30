@@ -5,7 +5,7 @@ const makeSummonBossConfirmationMessage = (area: IArea, timeRemaining: string) =
     const desc = [
         `**Are you ready to fight? You have ${timeRemaining} seconds to decide.**`,
         ``,
-        `Please confirm by using the reactions below. Decisions must be **unanimous**. You have **${timeRemaining} left to react.**`,
+        `Please confirm by using the reactions below. Decisions must be **unanimous**.`,
     ];
 
     return new MessageEmbed()

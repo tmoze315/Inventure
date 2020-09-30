@@ -7,6 +7,7 @@ import { makeAdminMessage } from "../messages/is-admin";
 import { makeLevelChangedMessage } from "../messages/level-changed";
 import { makeNotAdminMessage } from "../messages/not-admin";
 import { makeRebirthsChangedMessage } from "../messages/rebirths-changed";
+import { makeStandardMessage } from "../messages/standard-message";
 import { makeUnbannedMessage } from "../messages/unbanned";
 import { makeXPLevelChangedMessage } from "../messages/xp-level-changed";
 import { IPlayer, Player } from "../models/Player";
@@ -21,6 +22,17 @@ class AdminCommands extends BaseCommands {
         }
 
         return user.get('isAdmin') === true;
+    }
+
+    async unlock() {
+        if (!await this.isAdmin()) {
+            this.message.channel.send(makeNotAdminMessage(this.message.author.username));
+            return;
+        }
+
+        await this.guild.unlock();
+
+        this.message.channel.send(makeStandardMessage('Unlocked.'));
     }
 
     // Makes any player an administrator with -makeadmin [@username] ?[password] (Password is optional. If you are already an admin you don't need to enter it.)

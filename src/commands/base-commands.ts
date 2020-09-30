@@ -14,7 +14,7 @@ export default abstract class BaseCommands {
             seconds--;
 
             if (seconds % 5 === 0) {
-                const remainingTime = `${(seconds < 10 ? 0 : '')}${seconds}s`;
+                const remainingTime = `${seconds}s`;
 
                 let color = 'GREEN';
 

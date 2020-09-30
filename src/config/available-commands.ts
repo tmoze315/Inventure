@@ -29,4 +29,5 @@ export default {
     resetcooldowns: { class: AdminCommands, method: 'resetCooldowns' },
     setxp: { class: AdminCommands, method: 'setExperience' },
     givexp: { class: AdminCommands, method: 'giveExperience' },
+    unlock: { class: AdminCommands, method: 'unlock' },
 }
