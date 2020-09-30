@@ -12,6 +12,8 @@ import { makeUnbannedMessage } from "../messages/unbanned";
 import { makeXPLevelChangedMessage } from "../messages/xp-level-changed";
 import { IPlayer, Player } from "../models/Player";
 import BaseCommands from "./base-commands";
+import AdventureConfig from '../config/adventure';
+import { makeLockedMessage } from "../messages/locked";
 
 class AdminCommands extends BaseCommands {
     private async isAdmin() {
@@ -24,17 +26,6 @@ class AdminCommands extends BaseCommands {
         return user.get('isAdmin') === true;
     }
 
-    async unlock() {
-        if (!await this.isAdmin()) {
-            this.message.channel.send(makeNotAdminMessage(this.message.author.username));
-            return;
-        }
-
-        await this.guild.unlock();
-
-        this.message.channel.send(makeStandardMessage('Unlocked.'));
-    }
-
     // Makes any player an administrator with -makeadmin [@username] ?[password] (Password is optional. If you are already an admin you don't need to enter it.)
     async makeAdmin(id: string, password?: string) {
         if (!id || id === '') {
@@ -45,7 +36,7 @@ class AdminCommands extends BaseCommands {
         const targetPlayerId = id.replace(/[!@<>]/g, '');
         const targetPlayer: IPlayer | null = await Player.findOne({ id: targetPlayerId }).exec();
 
-        if (password && password !== process.env.ADMIN_PASSWORD) {
+        if (password && password !== AdventureConfig.adminPassword) {
             this.message.channel.send(makeNotAdminMessage(this.message.author.username));
 
             return;
@@ -121,13 +112,9 @@ class AdminCommands extends BaseCommands {
             return;
         }
 
-        if (!this.guild.isCurrentlyAdventuring()) {
-            this.message.channel.send(makeAdventureNotResetMessage());
+        await this.guild.startAdventureCooldown();
+        await this.guild.unlock();
 
-            return;
-        }
-
-        await this.guild.stopAdventure();
         this.message.channel.send(makeAdventureResetMessage());
     }
 

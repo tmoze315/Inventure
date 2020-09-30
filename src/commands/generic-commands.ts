@@ -1,6 +1,7 @@
 import { makeAdventureInProgressMessage } from "../messages/adventure-in-progress";
 import { makeClassNotSelectedMessage } from "../messages/class-not-selected";
 import { makeClassSelectedMessage } from "../messages/class-selected";
+import { makeErrorMessage } from "../messages/error";
 import { makeInsufficientFundsClassNotSelectedMessage } from "../messages/insufficient-funds-class-not-selected";
 import { makeInvalidHeroclassMessage } from "../messages/invalid-heroclass";
 import { makeStandardMessage } from "../messages/standard-message";
@@ -54,12 +55,7 @@ class GenericCommands extends BaseCommands {
     // Lets players select their Heroclass
     async selectHeroclass(heroclass: string) {
         if (this.guild.isLocked) {
-            this.message.channel.send(makeStandardMessage(`You cannot do that right now.`, 'DARK_RED'));
-            return;
-        }
-
-        if (this.guild.isCurrentlyAdventuring()) {
-            this.message.channel.send(makeAdventureInProgressMessage());
+            this.message.channel.send(makeErrorMessage(`You cannot do that right now.`));
             return;
         }
 

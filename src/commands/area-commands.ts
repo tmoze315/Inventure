@@ -1,20 +1,21 @@
 import { Message, CollectorFilter, MessageReaction, User } from "discord.js";
 import BaseCommands from "./base-commands";
 import { IArea } from "../areas/base-area";
-import { makeAdventureInProgressMessage } from "../messages/adventure-in-progress";
 import { makeAreaChangedMessage } from "../messages/area-changed";
 import { makeChangeAreaConfirmationMessage } from "../messages/change-area-confirmation";
 import AreaService from "../services/AreaService";
 import { makeAreaHelpMessage } from "../messages/area-help";
-import { makeStandardMessage } from "../messages/standard-message";
 import { makeCurrentAreaMessage } from "../messages/current-area";
+import { makeErrorMessage } from "../messages/error";
+import { makeSuccessMessage } from "../messages/success";
+import { makeLockedMessage } from "../messages/locked";
 
 class AreaCommands extends BaseCommands {
     async area() {
         const area: IArea | null = this.guild.getCurrentArea();
 
         if (!area) {
-            this.message.channel.send(makeStandardMessage('Sorry, you are not currently in any area', 'RED'));
+            this.message.channel.send(makeErrorMessage('Sorry, you are not currently in any area'));
             return;
         }
 
@@ -28,29 +29,24 @@ class AreaCommands extends BaseCommands {
         }
 
         if (this.guild.isLocked) {
-            this.message.channel.send(makeStandardMessage(`You cannot do that right now.`, 'DARK_RED'));
-            return;
-        }
-
-        if (this.guild.isCurrentlyAdventuring()) {
-            this.message.channel.send(makeAdventureInProgressMessage());
+            this.message.channel.send(makeLockedMessage());
             return;
         }
 
         const area: IArea | null = AreaService.findArea(areaName);
 
         if (!area || !this.guild.canTravelToArea(area)) {
-            this.message.channel.send(makeStandardMessage('Sorry, that area either does not exist or you have not unlocked it yet', 'RED'));
+            this.message.channel.send(makeErrorMessage('Sorry, that area either does not exist or you have not unlocked it yet'));
             return;
         }
 
         if (area.key === this.guild.get('currentArea')) {
-            this.message.channel.send(makeStandardMessage(`You are already in ${area.name}.`, 'GREEN'));
+            this.message.channel.send(makeErrorMessage(`You are already in ${area.name}.`));
             return;
         }
 
         if (!this.guild.canAfford(area.travelCost)) {
-            this.message.channel.send(makeStandardMessage(`Your guild cannot afford to travel to this location.`, 'RED'));
+            this.message.channel.send(makeErrorMessage(`Your guild cannot afford to travel to this location.`));
             return;
         }
 
@@ -118,7 +114,7 @@ class AreaCommands extends BaseCommands {
 
         if (denyList.length > 0 || approveList.length === 0) {
             this.guild.unlock();
-            this.message.channel.send(makeStandardMessage(`You decided not to travel to ${area.name}.`, 'DARK_RED'));
+            this.message.channel.send(makeErrorMessage(`You decided not to travel to ${area.name}.`));
 
             return;
         }
@@ -132,8 +128,8 @@ class AreaCommands extends BaseCommands {
 
             this.message.channel.send(makeAreaChangedMessage(currentArea, this.guild));
 
-            if (this.guild.canAttackBossInCurrentArea()) {
-                this.message.channel.send(makeStandardMessage(`You have collected enough (${questItems}/${currentArea.totalQuestItemsNeeded}) ${currentArea.questItem} quest items. You may summon the area boss by using \`-boss\`.`));
+            if (this.guild.hasEnoughQuestItemsForBossInCurrentArea()) {
+                this.message.channel.send(makeSuccessMessage(`You have collected enough (${questItems}/${currentArea.totalQuestItemsNeeded}) ${currentArea.questItem} quest items. You may summon the area boss by using \`-boss\`.`));
             }
 
             await this.guild.unlock();
@@ -141,7 +137,7 @@ class AreaCommands extends BaseCommands {
             console.error(error);
 
             this.guild.unlock();
-            this.message.channel.send(makeStandardMessage('Sorry, we were unable to travel to that location', 'RED'));
+            this.message.channel.send(makeErrorMessage('Sorry, we were unable to travel to that location'));
         }
     }
 }

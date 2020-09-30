@@ -1,9 +1,9 @@
 import { MessageEmbed } from 'discord.js';
 
-const makeStandardMessage = (message: string, color: string = 'DARK_BLUE') => {
+const makeStandardMessage = (message: string) => {
     return new MessageEmbed()
         .setDescription(message)
-        .setColor(color);
+        .setColor('DARK_BLUE');
 }
 
 export { makeStandardMessage };

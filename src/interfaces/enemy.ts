@@ -6,6 +6,7 @@ interface IEnemy {
     prefix: string,
     battleDurationMinutes: number,
     type: 'standard' | 'mini-boss',
+    isBoss: false,
 }
 
 interface IBoss {
@@ -15,6 +16,7 @@ interface IBoss {
     basePersuasionResistance: number,
     image: string,
     battleDurationMinutes: number,
+    isBoss: true,
 }
 
 export { IEnemy, IBoss };

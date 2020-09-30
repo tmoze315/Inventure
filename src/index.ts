@@ -6,7 +6,8 @@ import { connect } from 'mongoose';
 import PlayerService from './services/PlayerService';
 import availableCommands from './config/available-commands';
 import { Guild as GuildModel } from './models/Guild';
-import { IPlayer, Player } from './models/Player';
+import { IPlayer } from './models/Player';
+import AdventureConfig from './config/adventure';
 
 (async () => {
     await connect('mongodb://127.0.0.1:27017/inventure', {
@@ -25,7 +26,7 @@ import { IPlayer, Player } from './models/Player';
 
     // Create an event listener for messages
     client.on('message', async (message: Message) => {
-        const prefix = process.env.PREFIX || '-';
+        const prefix = AdventureConfig.prefix;
 
         if (!message.content.startsWith(prefix) || message.author.bot) {
             return;
@@ -42,7 +43,6 @@ import { IPlayer, Player } from './models/Player';
         if (!existingGuild) {
             const newGuild = new GuildModel({
                 id: guild.id,
-                currentAdventure: null,
                 lastAdventure: null,
             });
 
@@ -84,5 +84,5 @@ import { IPlayer, Player } from './models/Player';
     });
 
     // Log our bot in using the token from https://discord.com/developers/applications
-    client.login(process.env.DISCORD_KEY);
+    client.login(AdventureConfig.discordKey);
 })();

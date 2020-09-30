@@ -13,17 +13,15 @@ interface IGuild extends Document {
     enemies: Number;
     isLocked: boolean,
 
-    currentAdventure: Object;
-    lastAdventure: Object;
+    lastAdventure: Date;
+    lastAreaBosses: Object,
     unlockedAreas: Array<string>;
 
-    isCurrentlyAdventuring: Function;
     lock: Function,
     unlock: Function,
-    startAdventure: Function;
-    stopAdventure: Function;
+    startAdventureCooldown: Function;
     canAdventure: Function;
-    adventureCooldown: Function;
+    getAdventureCooldown: Function;
     changeArea: Function;
     getCurrentArea: Function;
     canTravelToArea: Function,
@@ -31,9 +29,12 @@ interface IGuild extends Document {
     pay: Function,
     canAfford: Function,
     giveQuestItemForCurrentArea: Function,
-    canAttackBossInCurrentArea: Function,
+    hasEnoughQuestItemsForBossInCurrentArea: Function,
     useQuestItemsForCurrentArea: Function,
     getQuestItemsForCurrentArea: Function,
+    canSummonAreaBoss: Function,
+    getAreaBossCooldown: Function,
+    startAreaBossCooldown: Function,
 }
 
 const GuildSchema = new Schema({
@@ -67,42 +68,20 @@ const GuildSchema = new Schema({
         type: Map,
         of: Number,
     },
-    currentAdventure: {
-        required: false,
-        exists: {
-            type: Boolean,
-            default: false,
-        },
-        type: {
-            type: String,
-            default: null,
-            enum: [null, 'battle'],
-            required: false,
-        },
-    },
     lastAdventure: {
         required: false,
-        timeEnded: Date,
-        exists: {
-            type: Boolean,
-            default: false,
-        },
-        type: {
-            type: String,
-            default: null,
-            enum: [null, 'battle'],
-            required: false,
-        },
+        type: Date,
+    },
+    lastAreaBosses: {
+        required: false,
+        type: Map,
+        of: Object,
     },
     isLocked: {
         type: Boolean,
         default: false,
     }
 });
-
-GuildSchema.methods.isCurrentlyAdventuring = function () {
-    return this.currentAdventure.exists === true;
-};
 
 GuildSchema.methods.lock = function () {
     this.isLocked = true;
@@ -117,44 +96,57 @@ GuildSchema.methods.unlock = function () {
 };
 
 GuildSchema.methods.canAdventure = function (date: Date) {
-    if (!this.lastAdventure.exists) {
-        return true;
-    }
-
-    const cooldown = this.adventureCooldown();
+    const cooldown = this.getAdventureCooldown();
 
     if (!cooldown) {
         return true;
     }
 
-
-    return isAfter(date, this.adventureCooldown());
+    return isAfter(date, cooldown);
 };
 
-GuildSchema.methods.adventureCooldown = function (): Date {
-    const timeEnded = this.lastAdventure.timeEnded;
-    return addSeconds(timeEnded, AdventureConfig.adventureCooldownInSeconds);
+GuildSchema.methods.getAdventureCooldown = function (): Date | null {
+    if (!this.lastAdventure) {
+        return null;
+    }
+
+    return addSeconds(this.lastAdventure, AdventureConfig.adventureCooldownInSeconds);
+}
+
+GuildSchema.methods.getAreaBossCooldown = function (): Date | null {
+    const lastBattleWithAreaBoss = this.get(`lastAreaBosses.${this.currentArea}`);
+
+    if (!lastBattleWithAreaBoss) {
+        return null;
+    }
+
+    const timeEnded = lastBattleWithAreaBoss.timeEnded;
+
+    if (!timeEnded) {
+        return null;
+    }
+
+    return addSeconds(timeEnded, AdventureConfig.bossCooldownInSeconds);
+}
+
+GuildSchema.methods.canSummonAreaBoss = function (area: IArea, date: Date) {
+    const cooldown = this.getAreaBossCooldown();
+
+    if (!cooldown) {
+        return true;
+    }
+
+    return isAfter(date, cooldown);
 };
 
-GuildSchema.methods.startAdventure = function (type: String): Promise<any> {
-    this.currentAdventure = {
-        exists: true,
-        type,
-    };
+GuildSchema.methods.startAdventureCooldown = function (): Promise<any> {
+    this.lastAdventure = new Date;
 
     return this.save();
 };
 
-GuildSchema.methods.stopAdventure = function (): Promise<any> {
-    this.lastAdventure = {
-        exists: true,
-        type: this.currentAdventure.type,
-        timeEnded: new Date,
-    };
-
-    this.currentAdventure = {
-        exists: false,
-    };
+GuildSchema.methods.startAreaBossCooldown = function (): Promise<any> {
+    this.set(`lastAreaBosses.${this.currentArea}`, new Date);
 
     return this.save();
 };
@@ -223,7 +215,7 @@ GuildSchema.methods.giveQuestItemForCurrentArea = function () {
     return this.save();
 }
 
-GuildSchema.methods.canAttackBossInCurrentArea = function (): boolean {
+GuildSchema.methods.hasEnoughQuestItemsForBossInCurrentArea = function (): boolean {
     const currentArea: IArea | null = this.getCurrentArea();
 
     if (!currentArea) {

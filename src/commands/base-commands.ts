@@ -1,4 +1,4 @@
-import { Message, User } from "discord.js";
+import { Message, User, CollectorFilter } from "discord.js";
 import { IGuild } from "../models/Guild";
 import { IPlayer } from '../models/Player';
 
