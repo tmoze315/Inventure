@@ -7,28 +7,42 @@ import { makeCurrentlyAdventuringMessage } from "../messages/currently-adventuri
 import { makeAdventureBattleMessage } from "../messages/adventure-battle";
 import { makeTimeRemainingMessage } from "../messages/time-remaining";
 import { makeAdventureResults } from "../messages/adventure-results";
-import { AreaFactory, IArea } from "../areas/base-area";
+import { IArea } from "../areas/base-area";
 import { makeAdventureInProgressMessage } from "../messages/adventure-in-progress";
 import { makeAreaChangedMessage } from "../messages/area-changed";
 import { IEnemy } from "../interfaces/enemy";
-import { makeAreaNotFoundMessage, makeCannotTravelToAreaMessage } from "../messages/cannot-travel-to-area";
 import { makeChangeAreaConfirmationMessage } from "../messages/change-area-confirmation";
 import { makeTravelDeniedMessage } from "../messages/travel-denied";
+import AreaService from "../services/AreaService";
+import { makeAreaHelpMessage } from "../messages/area-help";
+import { makeStandardMessage } from "../messages/standard-message";
 
 class AdventureCommands extends BaseCommands {
     // stats([first, last]: [string?, string?]) {
     // Example parameters
     // }
 
-    async changeArea(areaName: string) {
-        if (this.guild.isCurrentlyAdventuring()) {
-            return await this.message.channel.send(makeAdventureInProgressMessage());
+    async travel(areaName?: string) {
+        if (!areaName) {
+            this.message.channel.send(makeAreaHelpMessage(this.guild));
+            return;
         }
 
-        const area = this.guild.findArea(areaName);
+        if (this.guild.isCurrentlyAdventuring()) {
+            this.message.channel.send(makeAdventureInProgressMessage());
+            return;
+        }
 
-        if (!area || !this.guild.canTravelToArea(areaName)) {
-            return await this.message.channel.send(makeCannotTravelToAreaMessage());
+        const area: IArea | null = AreaService.findArea(areaName);
+
+        if (!area || !this.guild.canTravelToArea(area)) {
+            this.message.channel.send(makeStandardMessage('Sorry, that area either does not exist or you have not unlocked it yet', 'RED'));
+            return;
+        }
+
+        if (area.key === this.guild.get('currentArea')) {
+            this.message.channel.send(makeStandardMessage(`You are already in ${area.name}.`, 'GREEN'));
+            return;
         }
 
         const message: Message = await this.message.channel.send(makeChangeAreaConfirmationMessage(this.message.author.username, area));
@@ -94,9 +108,9 @@ class AdventureCommands extends BaseCommands {
 
             this.message.channel.send(makeAreaChangedMessage(area));
         } catch (error) {
-            console.log(error);
+            console.error(error);
 
-            this.message.channel.send(makeCannotTravelToAreaMessage());
+            this.message.channel.send(makeStandardMessage('Sorry, we were unable to travel to that location', 'RED'));
         }
     }
 

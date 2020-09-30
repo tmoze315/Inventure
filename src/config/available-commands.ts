@@ -11,7 +11,7 @@ export default {
     // Adventuring Commands
     adventure: { class: AdventureCommands, method: 'adventure' },
     a: { class: AdventureCommands, method: 'adventure' },
-    area: { class: AdventureCommands, method: 'changeArea' },
+    travel: { class: AdventureCommands, method: 'travel' },
 
     // Admin
     ban: { class: AdminCommands, method: 'ban' },

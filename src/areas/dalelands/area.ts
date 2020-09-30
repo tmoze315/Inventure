@@ -3,6 +3,7 @@ import { BaseArea } from "../base-area";
 import enemies from './enemies';
 
 class DalelandsArea extends BaseArea {
+    public key: string = 'dalelands';
     public name: string = 'Dalelands';
     public description: string = 'Dense Forest Country';
     public color: string = '#0f0';

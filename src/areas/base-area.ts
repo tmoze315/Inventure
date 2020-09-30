@@ -1,9 +1,9 @@
 import { IEnemy } from "../interfaces/enemy";
-import { DalelandsArea } from "./dalelands/area";
 
 interface IArea {
     getRandomEnemy(): IEnemy;
 
+    key: string;
     name: string;
     description: string;
     color: string;
@@ -17,9 +17,10 @@ interface IArea {
  * 1) Add the battle messages to here, so we can output phrases like:
  * "The path ahead winds down into a valley below" to the battle message and have them
  * make sense for your current area
- * 2) Add keys needed to unlock the boss
+ * 2) Add quest items needed to unlock the boss
  */
 abstract class BaseArea implements IArea {
+    public abstract key: string;
     public abstract name: string;
     public abstract description: string;
     public abstract color: string;
@@ -57,20 +58,4 @@ abstract class BaseArea implements IArea {
     }
 }
 
-class AreaFactory {
-    static getArea(area: string): IArea | null {
-        const lookup = {
-            dalelands: DalelandsArea,
-        };
-
-        const areaClass = (lookup as any);
-
-        if (!areaClass) {
-            return null;
-        }
-
-        return new areaClass.area;
-    }
-}
-
-export { BaseArea, IArea, AreaFactory };
+export { BaseArea, IArea };
