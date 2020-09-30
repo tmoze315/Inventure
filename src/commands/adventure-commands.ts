@@ -16,11 +16,23 @@ import { makeTravelDeniedMessage } from "../messages/travel-denied";
 import AreaService from "../services/AreaService";
 import { makeAreaHelpMessage } from "../messages/area-help";
 import { makeStandardMessage } from "../messages/standard-message";
+import { makeCurrentAreaMessage } from "../messages/current-area";
 
 class AdventureCommands extends BaseCommands {
     // stats([first, last]: [string?, string?]) {
     // Example parameters
     // }
+
+    async area() {
+        const area: IArea | null = this.guild.getCurrentArea();
+
+        if (!area) {
+            this.message.channel.send(makeStandardMessage('Sorry, you are not currently in any area', 'RED'));
+            return;
+        }
+
+        this.message.channel.send(makeCurrentAreaMessage(area));
+    }
 
     async travel(areaName?: string) {
         if (!areaName) {
@@ -45,7 +57,21 @@ class AdventureCommands extends BaseCommands {
             return;
         }
 
-        const message: Message = await this.message.channel.send(makeChangeAreaConfirmationMessage(this.message.author.username, area));
+        if (!this.guild.canAfford(area.travelCost)) {
+            this.message.channel.send(makeStandardMessage(`Your guild cannot afford to travel to this location.`, 'RED'));
+            return;
+        }
+
+        const message: Message = await this.message.channel.send(makeChangeAreaConfirmationMessage(this.message.author.username, area, this.guild, '30s'));
+
+        await this.countdownSeconds(30,
+            (timeRemaining: string, color: string) => {
+                message.edit(makeChangeAreaConfirmationMessage(this.message.author.username, area, this.guild, timeRemaining));
+            },
+            () => {
+                message.delete();
+            }
+        );
 
         message.react('✅');
         message.react('❌');
@@ -95,18 +121,20 @@ class AdventureCommands extends BaseCommands {
             }
         });
 
-        if (denyTravel.length > 0) {
+        if (denyTravel.length > 0 || approveTravel.length === 0) {
             this.message.channel.send(makeTravelDeniedMessage(area));
 
             return;
         }
 
         try {
-            await this.guild.changeArea(areaName);
+            await this.guild.changeArea(area);
 
-            const area = await this.guild.getCurrentArea();
+            await this.guild.pay(area.travelCost);
 
-            this.message.channel.send(makeAreaChangedMessage(area));
+            const currentArea = await this.guild.getCurrentArea();
+
+            this.message.channel.send(makeAreaChangedMessage(currentArea));
         } catch (error) {
             console.error(error);
 
@@ -189,7 +217,15 @@ class AdventureCommands extends BaseCommands {
         const duration = enemy.battleDurationMinutes;
 
         const timerMessage: Message = await this.message.channel.send(makeTimeRemainingMessage(`${duration}m 00s`, 'DARK_GREEN'));
-        await this.countdownMinutes(duration, timerMessage);
+
+        await this.countdownMinutes(duration,
+            (timeRemaining: string, color: string) => {
+                timerMessage.edit(makeTimeRemainingMessage(timeRemaining, color));
+            },
+            () => {
+                timerMessage.delete();
+            }
+        );
 
         // const durationInMiliseconds = duration * 60000;
         const durationInMiliseconds = 0.1 * 60000;
@@ -250,7 +286,7 @@ class AdventureCommands extends BaseCommands {
     }
 
     // https://gist.github.com/adhithyan15/4350689
-    countdownMinutes(minutes: number, message: Message) {
+    countdownMinutes(minutes: number, updateCallback: CallableFunction, endCallback: CallableFunction) {
         let seconds: number = 60;
         let mins: number = minutes;
 
@@ -269,15 +305,43 @@ class AdventureCommands extends BaseCommands {
                     color = 'RED';
                 }
 
-                message.edit(makeTimeRemainingMessage(remainingTime, color));
+                updateCallback(remainingTime, color);
             }
 
             if (seconds > 0) {
                 setTimeout(tick, 1000);
             } else if (minutes > 1) {
-                this.countdownMinutes(mins - 1, message);
+                this.countdownMinutes(mins - 1, updateCallback, endCallback);
             } else if (currentMinutes <= 0 && seconds <= 0) {
-                return message.delete();
+                return endCallback();
+            }
+        }
+
+        tick();
+    }
+
+    countdownSeconds(seconds: number, updateCallback: CallableFunction, endCallback: CallableFunction) {
+        const tick = () => {
+            seconds--;
+
+            if (seconds % 5 === 0) {
+                const remainingTime = `${(seconds < 10 ? 0 : '')}${seconds}s`;
+
+                let color = 'GREEN';
+
+                if (seconds <= 0 && seconds > 30 && seconds < 45) {
+                    color = 'ORANGE';
+                } else if (seconds <= 0 && seconds <= 30) {
+                    color = 'RED';
+                }
+
+                updateCallback(remainingTime, color);
+            }
+
+            if (seconds > 0) {
+                setTimeout(tick, 1000);
+            } else {
+                return endCallback();
             }
         }
 

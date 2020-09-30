@@ -14,6 +14,12 @@ class AreaService {
 
         return new area.class;
     }
+
+    static getAllAreas(): Array<IArea> {
+        return supportedAreas.map((supportedArea): IArea => {
+            return new supportedArea.class;
+        });
+    }
 }
 
 export default AreaService;

@@ -285,7 +285,7 @@ PlayerSchema.methods.addCurrency = function (amount: number) {
     return this.save();
 };
 
-PlayerSchema.methods.makeAdmin = function (amount: number) {
+PlayerSchema.methods.makeAdmin = function () {
     this.isAdmin = true;
 
     return this.save();

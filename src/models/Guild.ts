@@ -25,6 +25,8 @@ interface IGuild extends Document {
     getCurrentArea: Function;
     canTravelToArea: Function,
     getUnlockedAreas: Function,
+    pay: Function,
+    canAfford: Function,
 }
 
 const GuildSchema = new Schema({
@@ -143,7 +145,7 @@ GuildSchema.methods.changeArea = function (area: string | IArea | null): Promise
         throw new Error(`Cannot travel to ${area}.`);
     }
 
-    this.currentArea = area;
+    this.currentArea = area.key;
 
     return this.save();
 };
@@ -162,6 +164,24 @@ GuildSchema.methods.getUnlockedAreas = function (): Array<IArea> {
     }).filter((item: IArea | null): boolean => {
         return item !== null;
     });
+}
+
+GuildSchema.methods.pay = function (amount: number) {
+    if (typeof amount === 'string') {
+        amount = parseInt(amount);
+    }
+
+    this.currency -= amount;
+
+    return this.save();
+}
+
+GuildSchema.methods.canAfford = function (amount: number) {
+    if (typeof amount === 'string') {
+        amount = parseInt(amount);
+    }
+
+    return this.currency >= amount;
 }
 
 const Guild = model<IGuild>('Guild', GuildSchema);

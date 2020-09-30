@@ -10,6 +10,7 @@ interface IArea {
     miniBossColor: string;
     bossColor: string;
     travelCost: number;
+    emoji: string;
 }
 
 /**
@@ -27,6 +28,8 @@ abstract class BaseArea implements IArea {
     public abstract miniBossColor: string;
     public abstract bossColor: string;
     public abstract travelCost: number;
+
+    public emoji: string = '🗺';
 
     protected abstract miniBossSpawnsOneIn: number;
     protected abstract getEnemyPool(): Array<IEnemy>;

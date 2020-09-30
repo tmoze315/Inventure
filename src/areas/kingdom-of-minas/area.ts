@@ -1,15 +1,17 @@
 import { IEnemy } from "../../interfaces/enemy";
 import { BaseArea } from "../base-area";
 import enemies from './enemies';
+import colors from '../../config/colors';
 
-class DalelandsArea extends BaseArea {
-    public key: string = 'dalelands';
-    public name: string = 'Dalelands';
-    public description: string = 'Dense Forest Country';
-    public color: string = '#0f0';
-    public miniBossColor: string = '#00f';
-    public bossColor: string = '#f00';
-    public travelCost: number = 1000;
+class KingdomOfMinasArea extends BaseArea {
+    public key: string = 'kingdom-of-minas';
+    public name: string = 'Kingdom of Minas';
+    public description: string = 'Beautiful Kingdom of Saints';
+    public color: string = colors['pink-700'];
+    public miniBossColor: string = colors['pink-800'];
+    public bossColor: string = colors['pink-900'];
+    public travelCost: number = 10000;
+    public emoji: string = '🏛';
 
     protected miniBossSpawnsOneIn: number = 15;
 
@@ -18,4 +20,4 @@ class DalelandsArea extends BaseArea {
     }
 }
 
-export { DalelandsArea };
+export { KingdomOfMinasArea };
