@@ -1,6 +1,8 @@
-import { Schema, model, Document, Types } from 'mongoose';
+import { Schema, model, Document } from 'mongoose';
 import { addSeconds, isAfter } from 'date-fns';
 import AdventureConfig from '../config/adventure';
+import { IArea } from '../areas/base-area';
+import AreaService from '../services/AreaService';
 
 interface IGuild extends Document {
     id: String;
@@ -12,12 +14,17 @@ interface IGuild extends Document {
 
     currentAdventure: Object;
     lastAdventure: Object;
+    unlockedAreas: Array<string>;
 
     isCurrentlyAdventuring: Function;
     startAdventure: Function;
     stopAdventure: Function;
     canAdventure: Function;
     adventureCooldown: Function;
+    changeArea: Function;
+    getCurrentArea: Function;
+    canTravelToArea: Function,
+    getUnlockedAreas: Function,
 }
 
 const GuildSchema = new Schema({
@@ -37,6 +44,15 @@ const GuildSchema = new Schema({
     enemies: {
         type: Number,
         default: 1000,
+    },
+    currentArea: {
+        type: String,
+        default: 'dalelands',
+        enum: ['dalelands', 'daggerford', 'dreg-marshes', 'redbay', 'the-lost-ruins', 'forest-of-angels', 'triggala-divide', 'kingdom-of-minas'],
+    },
+    unlockedAreas: {
+        type: [String],
+        default: ['dalelands'],
     },
     currentAdventure: {
         required: false,
@@ -101,7 +117,6 @@ GuildSchema.methods.startAdventure = function (type: String): Promise<any> {
 };
 
 GuildSchema.methods.stopAdventure = function (): Promise<any> {
-
     this.lastAdventure = {
         exists: true,
         type: this.currentAdventure.type,
@@ -112,11 +127,42 @@ GuildSchema.methods.stopAdventure = function (): Promise<any> {
         exists: false,
     };
 
+    return this.save();
+};
 
-    // this.markModified('timeEnded');
+GuildSchema.methods.changeArea = function (area: string | IArea | null): Promise<any> {
+    if (typeof area === 'string') {
+        area = AreaService.findArea(area);
+    }
+
+    if (!area) {
+        throw new Error(`Area ${area} not found.`);
+    }
+
+    if (!this.canTravelToArea(area)) {
+        throw new Error(`Cannot travel to ${area}.`);
+    }
+
+    this.currentArea = area;
 
     return this.save();
 };
+
+GuildSchema.methods.getCurrentArea = function (): IArea | null {
+    return AreaService.findArea(this.get('currentArea'));
+};
+
+GuildSchema.methods.canTravelToArea = function (area: IArea): boolean {
+    return this.get('unlockedAreas').includes(area.key);
+}
+
+GuildSchema.methods.getUnlockedAreas = function (): Array<IArea> {
+    return this.get('unlockedAreas').map((areaName: string): IArea | null => {
+        return AreaService.findArea(areaName);
+    }).filter((item: IArea | null): boolean => {
+        return item !== null;
+    });
+}
 
 const Guild = model<IGuild>('Guild', GuildSchema);
 
