@@ -5,7 +5,16 @@ interface IEnemy {
     image: string,
     prefix: string,
     battleDurationMinutes: number,
-    type: 'standard' | 'mini-boss' | 'boss',
+    type: 'standard' | 'mini-boss',
 }
 
-export { IEnemy };
+interface IBoss {
+    name: string,
+    description: string,
+    baseHp: number,
+    basePersuasionResistance: number,
+    image: string,
+    battleDurationMinutes: number,
+}
+
+export { IEnemy, IBoss };

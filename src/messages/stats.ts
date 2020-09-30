@@ -22,8 +22,8 @@ const makeStatsMessage = (player: IPlayer) => {
         ``,
         `**Extra information**`,
         `\`\`\`css`,
-        `- Currency: ${player.get('currency')}`,
-        `- Experience: ${player.get('experience')}/TODO`,
+        `- Currency: ${player.get('currency').toLocaleString()}`,
+        `- Experience: ${player.get('experience').toLocaleString()}/TODO`,
         `- Unspent Skillpoints: ${player.getSkillpoint('unspent')}`,
         `\`\`\``,
     ];

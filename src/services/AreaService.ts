@@ -1,5 +1,4 @@
 import { IArea } from "../areas/base-area";
-import { DalelandsArea } from "../areas/dalelands/area";
 import supportedAreas from '../config/areas';
 
 class AreaService {
@@ -13,6 +12,12 @@ class AreaService {
         }
 
         return new area.class;
+    }
+
+    static getAllAreas(): Array<IArea> {
+        return supportedAreas.map((supportedArea): IArea => {
+            return new supportedArea.class;
+        });
     }
 }
 

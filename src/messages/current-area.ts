@@ -2,7 +2,7 @@ import { MessageEmbed } from 'discord.js';
 import { IArea } from '../areas/base-area';
 import { IGuild } from '../models/Guild';
 
-const makeAreaChangedMessage = (area: IArea, guild: IGuild) => {
+const makeCurrentAreaMessage = (area: IArea, guild: IGuild) => {
     const desc = [
         `${area.emoji} - _${area.description}_`,
         ``,
@@ -11,9 +11,9 @@ const makeAreaChangedMessage = (area: IArea, guild: IGuild) => {
     ];
 
     return new MessageEmbed()
-        .setTitle(`Welcome to ${area.name}!`)
+        .setTitle(`You are in ${area.name}`)
         .setDescription(desc.join('\n'))
         .setColor(area.color);
 }
 
-export { makeAreaChangedMessage }; 
+export { makeCurrentAreaMessage }; 

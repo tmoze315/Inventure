@@ -1,17 +1,17 @@
-import colors from "../../config/colors";
 import { IBoss, IEnemy } from "../../interfaces/enemy";
 import { BaseArea } from "../base-area";
 import enemies from './enemies';
+import colors from '../../config/colors';
 
-class RedbayArea extends BaseArea {
-    public key: string = 'redbay';
-    public name: string = 'Redbay';
-    public description: string = 'Port country';
-    public color: string = colors['teal-500'];
-    public miniBossColor: string = colors['teal-700'];
-    public bossColor: string = colors['teal-900'];
-    public travelCost: number = 2000;
-    public emoji: string = '⚓️';
+class TriggalaDivideArea extends BaseArea {
+    public key: string = 'triggala-divide';
+    public name: string = 'Triggala Divide';
+    public description: string = 'A large area of land and water separating the world from the kingdom of minas';
+    public color: string = colors['indigo-700'];
+    public miniBossColor: string = colors['indigo-800'];
+    public bossColor: string = colors['indigo-900'];
+    public travelCost: number = 7000;
+    public emoji: string = '🗾';
 
     protected miniBossSpawnsOneIn: number = 15;
 
@@ -31,4 +31,4 @@ class RedbayArea extends BaseArea {
     }
 }
 
-export { RedbayArea };
+export { TriggalaDivideArea };

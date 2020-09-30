@@ -1,17 +1,17 @@
-import colors from "../../config/colors";
 import { IBoss, IEnemy } from "../../interfaces/enemy";
 import { BaseArea } from "../base-area";
 import enemies from './enemies';
+import colors from '../../config/colors';
 
-class RedbayArea extends BaseArea {
-    public key: string = 'redbay';
-    public name: string = 'Redbay';
-    public description: string = 'Port country';
-    public color: string = colors['teal-500'];
-    public miniBossColor: string = colors['teal-700'];
-    public bossColor: string = colors['teal-900'];
-    public travelCost: number = 2000;
-    public emoji: string = '⚓️';
+class BayhillArea extends BaseArea {
+    public key: string = 'bayhill';
+    public name: string = 'Bayhill';
+    public description: string = 'Dense Forest Country';
+    public color: string = colors['green-500'];
+    public miniBossColor: string = colors['green-700'];
+    public bossColor: string = colors['green-900'];
+    public travelCost: number = 1000;
+    public emoji: string = '🌲';
 
     protected miniBossSpawnsOneIn: number = 15;
 
@@ -31,4 +31,4 @@ class RedbayArea extends BaseArea {
     }
 }
 
-export { RedbayArea };
+export { BayhillArea };

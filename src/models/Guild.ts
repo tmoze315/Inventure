@@ -11,12 +11,15 @@ interface IGuild extends Document {
     currency: Number;
     allies: Number;
     enemies: Number;
+    isLocked: boolean,
 
     currentAdventure: Object;
     lastAdventure: Object;
     unlockedAreas: Array<string>;
 
     isCurrentlyAdventuring: Function;
+    lock: Function,
+    unlock: Function,
     startAdventure: Function;
     stopAdventure: Function;
     canAdventure: Function;
@@ -25,6 +28,12 @@ interface IGuild extends Document {
     getCurrentArea: Function;
     canTravelToArea: Function,
     getUnlockedAreas: Function,
+    pay: Function,
+    canAfford: Function,
+    giveQuestItemForCurrentArea: Function,
+    canAttackBossInCurrentArea: Function,
+    useQuestItemsForCurrentArea: Function,
+    getQuestItemsForCurrentArea: Function,
 }
 
 const GuildSchema = new Schema({
@@ -47,12 +56,16 @@ const GuildSchema = new Schema({
     },
     currentArea: {
         type: String,
-        default: 'dalelands',
-        enum: ['dalelands', 'daggerford', 'dreg-marshes', 'redbay', 'the-lost-ruins', 'forest-of-angels', 'triggala-divide', 'kingdom-of-minas'],
+        default: 'bayhill',
+        enum: ['bayhill', 'daggerford', 'dreg-marshes', 'redbay', 'the-lost-ruins', 'forest-of-angels', 'triggala-divide', 'kingdom-of-minas'],
     },
     unlockedAreas: {
         type: [String],
-        default: ['dalelands'],
+        default: ['bayhill'],
+    },
+    questItems: {
+        type: Map,
+        of: Number,
     },
     currentAdventure: {
         required: false,
@@ -81,10 +94,26 @@ const GuildSchema = new Schema({
             required: false,
         },
     },
+    isLocked: {
+        type: Boolean,
+        default: false,
+    }
 });
 
 GuildSchema.methods.isCurrentlyAdventuring = function () {
     return this.currentAdventure.exists === true;
+};
+
+GuildSchema.methods.lock = function () {
+    this.isLocked = true;
+
+    return this.save();
+};
+
+GuildSchema.methods.unlock = function () {
+    this.isLocked = false;
+
+    return this.save();
 };
 
 GuildSchema.methods.canAdventure = function (date: Date) {
@@ -143,7 +172,7 @@ GuildSchema.methods.changeArea = function (area: string | IArea | null): Promise
         throw new Error(`Cannot travel to ${area}.`);
     }
 
-    this.currentArea = area;
+    this.currentArea = area.key;
 
     return this.save();
 };
@@ -162,6 +191,61 @@ GuildSchema.methods.getUnlockedAreas = function (): Array<IArea> {
     }).filter((item: IArea | null): boolean => {
         return item !== null;
     });
+}
+
+GuildSchema.methods.pay = function (amount: number) {
+    if (typeof amount === 'string') {
+        amount = parseInt(amount);
+    }
+
+    this.currency -= amount;
+
+    return this.save();
+}
+
+GuildSchema.methods.canAfford = function (amount: number) {
+    if (typeof amount === 'string') {
+        amount = parseInt(amount);
+    }
+
+    return this.currency >= amount;
+}
+
+GuildSchema.methods.getQuestItemsForCurrentArea = function () {
+    return this.get(`questItems.${this.currentArea}`) || 0;
+}
+
+GuildSchema.methods.giveQuestItemForCurrentArea = function () {
+    const currentQuestItems = this.getQuestItemsForCurrentArea();
+
+    this.set(`questItems.${this.currentArea}`, currentQuestItems + 1);
+
+    return this.save();
+}
+
+GuildSchema.methods.canAttackBossInCurrentArea = function (): boolean {
+    const currentArea: IArea | null = this.getCurrentArea();
+
+    if (!currentArea) {
+        return false;
+    }
+
+    return this.getQuestItemsForCurrentArea() >= currentArea.totalQuestItemsNeeded;
+}
+
+GuildSchema.methods.useQuestItemsForCurrentArea = function () {
+    const currentArea: IArea | null = this.getCurrentArea();
+
+    if (!currentArea) {
+        return false;
+    }
+
+    const currentQuestItems = this.get(`questItems.${currentArea.key}`) || 0;
+    const newQuertItems = currentQuestItems - currentArea.totalQuestItemsNeeded;
+
+    this.set(`questItems.${currentArea.key}`, newQuertItems);
+
+    return this.save();
 }
 
 const Guild = model<IGuild>('Guild', GuildSchema);

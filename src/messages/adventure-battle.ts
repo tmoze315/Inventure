@@ -3,10 +3,6 @@ import { IArea } from '../areas/base-area';
 import { IEnemy } from '../interfaces/enemy';
 
 const makeAdventureBattleMessage = (area: IArea, enemy: IEnemy, username: string) => {
-    if (enemy.type === 'boss') {
-        return makeBossMessage(area, enemy, username);
-    }
-
     if (enemy.type === 'mini-boss') {
         return makeMiniBossMessage(area, enemy, username);
     }
@@ -18,18 +14,17 @@ const makeMonsterMessage = (area: IArea, enemy: IEnemy, username: string) => {
     const desc = [
         `The path ahead winds down into a valley below. **${username}** is excited to go see what could be found, but ${enemy.prefix} ${enemy.name} just landed in front of you glaring!`,
         ``,
-        `What will you do and will other heroes be brave enough to help you?`,
-        ``,
-        `Heroes have ${enemy.battleDurationMinutes} minutes to participate via reaction:`,
+        `What will you do? You have ${enemy.battleDurationMinutes} minutes to decide.`,
         ``,
         `React with:`,
-        `**Fight (⚔️)** - **Spell (✨)** - **Talk (🗣)** - **Pray (🙏)** - **Run (🏃‍♂️)**`,
+        `**Fight (⚔️)** - **Spell (✨)** - **Persuade (🗣)** - **Run (🏃‍♂️)**`,
     ];
 
     return new MessageEmbed()
-        .setTitle(`You feel adventurous: ${username}?`)
+        .setTitle(`${username} is feeling adventurous`)
         .setColor(area.color)
         .setDescription(desc.join('\n'))
+        .setFooter(`Location: ${area.name}`)
         .setThumbnail(enemy.image);
 };
 
@@ -37,45 +32,21 @@ const makeMiniBossMessage = (area: IArea, enemy: IEnemy, username: string) => {
     const desc = [
         `The path ahead winds down into a valley below. **${username}** is excited to go see what could be found, but ${enemy.prefix} ${enemy.name} just landed in front of you glaring!`,
         ``,
-        `\`\`\`css`,
-        `[⚠️ Warning: Strong enemy detected! ⚠️]`,
+        `\`\`\`yaml`,
+        `[Warning: Strong enemy detected!]`,
         `\`\`\``,
         ``,
-        `What will you do and will other heroes be brave enough to help you?`,
-        ``,
-        `Heroes have ${enemy.battleDurationMinutes} minutes to participate via reaction:`,
+        `What will you do? You have ${enemy.battleDurationMinutes} minutes to decide.`,
         ``,
         `React with:`,
-        `**Fight (⚔️)** - **Spell (✨)** - **Talk (🗣)** - **Pray (🙏)** - **Run (🏃‍♂️)**`,
+        `**Fight (⚔️)** - **Spell (✨)** - **Persuade (🗣)** - **Run (🏃‍♂️)**`,
     ];
 
     return new MessageEmbed()
-        .setTitle(`You feel adventurous: ${username}?`)
+        .setTitle(`${username} is feeling adventurous`)
         .setColor(area.miniBossColor)
         .setDescription(desc.join('\n'))
-        .setImage(enemy.image);
-};
-
-const makeBossMessage = (area: IArea, enemy: IEnemy, username: string) => {
-    const desc = [
-        `The path ahead winds down into a valley below. **${username}** is excited to go see what could be found, but ${enemy.prefix} ${enemy.name} just landed in front of you glaring!`,
-        ``,
-        `\`\`\`css`,
-        `[⚠️ Warning: EXTREMELY Strong enemy detected! ⚠️]`,
-        `\`\`\``,
-        ``,
-        `What will you do and will other heroes be brave enough to help you?`,
-        ``,
-        `Heroes have ${enemy.battleDurationMinutes} minutes to participate via reaction:`,
-        ``,
-        `React with:`,
-        `**Fight (⚔️)** - **Spell (✨)** - **Talk (🗣)** - **Pray (🙏)** - **Run (🏃‍♂️)**`,
-    ];
-
-    return new MessageEmbed()
-        .setTitle(`You feel adventurous: ${username}?`)
-        .setColor(area.bossColor)
-        .setDescription(desc.join('\n'))
+        .setFooter(`Location: ${area.name}`)
         .setImage(enemy.image);
 };
 

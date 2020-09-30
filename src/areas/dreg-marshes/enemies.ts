@@ -2,7 +2,7 @@ import { IEnemy } from "../../interfaces/enemy";
 
 const enemies = [
     <IEnemy>{
-        name: 'Dalelands - Abyssal Demon 30hp',
+        name: 'Dreg Marshes - Abyssal Demon 30hp',
         prefix: 'an',
         baseHp: 30,
         basePersuasionResistance: 180,
@@ -11,7 +11,7 @@ const enemies = [
         battleDurationMinutes: 1,
     },
     <IEnemy>{
-        name: 'Dalelands - Abyssal Demon 20hp',
+        name: 'Dreg Marshes - Abyssal Demon 20hp',
         prefix: 'an',
         baseHp: 20,
         basePersuasionResistance: 180,
@@ -20,7 +20,7 @@ const enemies = [
         battleDurationMinutes: 1,
     },
     <IEnemy>{
-        name: 'Dalelands - Abyssal Demon 40hp',
+        name: 'Dreg Marshes - Abyssal Demon 40hp',
         prefix: 'an',
         baseHp: 40,
         basePersuasionResistance: 180,
@@ -29,7 +29,7 @@ const enemies = [
         battleDurationMinutes: 1,
     },
     <IEnemy>{
-        name: 'Dalelands - Abyssal Demon 35hp',
+        name: 'Dreg Marshes - Abyssal Demon 35hp',
         prefix: 'an',
         baseHp: 35,
         basePersuasionResistance: 180,
@@ -38,7 +38,7 @@ const enemies = [
         battleDurationMinutes: 1,
     },
     <IEnemy>{
-        name: 'Dalelands - Abyssal Demon 50hp',
+        name: 'Dreg Marshes - Abyssal Demon 50hp',
         prefix: 'an',
         baseHp: 50,
         basePersuasionResistance: 180,
@@ -47,21 +47,12 @@ const enemies = [
         battleDurationMinutes: 1,
     },
     <IEnemy>{
-        name: 'Dalelands - Bronze Dragon',
+        name: 'Dreg Marshes - Bronze Dragon',
         prefix: 'a',
         baseHp: 260,
         basePersuasionResistance: 250,
         image: 'https://cdn.pixabay.com/photo/2017/01/13/07/57/dragon-1976596_960_720.jpg',
         type: 'mini-boss',
-        battleDurationMinutes: 1,
-    },
-    <IEnemy>{
-        name: 'Dalelands - Bronze Dragon',
-        prefix: 'a',
-        baseHp: 260,
-        basePersuasionResistance: 250,
-        image: 'https://cdn.pixabay.com/photo/2017/01/13/07/57/dragon-1976596_960_720.jpg',
-        type: 'boss',
         battleDurationMinutes: 1,
     },
 ];

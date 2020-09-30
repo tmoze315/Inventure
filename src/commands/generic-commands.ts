@@ -1,7 +1,9 @@
+import { makeAdventureInProgressMessage } from "../messages/adventure-in-progress";
 import { makeClassNotSelectedMessage } from "../messages/class-not-selected";
 import { makeClassSelectedMessage } from "../messages/class-selected";
 import { makeInsufficientFundsClassNotSelectedMessage } from "../messages/insufficient-funds-class-not-selected";
 import { makeInvalidHeroclassMessage } from "../messages/invalid-heroclass";
+import { makeStandardMessage } from "../messages/standard-message";
 import { makeStartMessage } from "../messages/start-message";
 import { makeStatsMessage } from "../messages/stats";
 import { Player, IPlayer } from '../models/Player';
@@ -51,6 +53,16 @@ class GenericCommands extends BaseCommands {
 
     // Lets players select their Heroclass
     async selectHeroclass(heroclass: string) {
+        if (this.guild.isLocked) {
+            this.message.channel.send(makeStandardMessage(`You cannot do that right now.`, 'DARK_RED'));
+            return;
+        }
+
+        if (this.guild.isCurrentlyAdventuring()) {
+            this.message.channel.send(makeAdventureInProgressMessage());
+            return;
+        }
+
         const player: IPlayer | null = await Player.findOne({ id: this.message.author.id }).exec();
 
         if (!player) {
@@ -79,7 +91,6 @@ class GenericCommands extends BaseCommands {
         } catch (exception) {
             this.message.channel.send(makeInvalidHeroclassMessage(player.get('username')));
         }
-
     }
 }
 
