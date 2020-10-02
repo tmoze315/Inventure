@@ -1,0 +1,7 @@
+{
+    "maxHp": 1000,
+    "maxPersuasionResistance": 800,
+    "alpha": 4.0,
+    "beta": 1.8,
+    "seed": 1234
+}
