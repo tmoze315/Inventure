@@ -25,6 +25,7 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "@stdlib/stdlib": "0.0.92",
         "@types/mongoose": "^5.7.36",
         "@types/node": "^14.11.2",
         "bufferutil": "^4.0.1",
