@@ -2,8 +2,7 @@ import { Schema, model, Document } from 'mongoose';
 import { IEnemy } from '../interfaces/enemy';
 import { ItemSchema } from './Item';
 import { PlayerAttack } from '../commands/adventure-commands';
-import { makeRebirthSuccessMessage } from '../messages/rebirth-success';
-import { makeRebirthFailureMessage } from '../messages/rebirth-failure';
+import { IArea } from '../areas/base-area';
 
 interface IPlayer extends Document {
     id: string,
@@ -13,8 +12,6 @@ interface IPlayer extends Document {
     class: string,
     background: string,
     experience: number,
-    nextLevelExperience: number,
-    maxLevelExperience: number,
     level: number,
     maxLevel: number,
     rebirths: number,
@@ -41,9 +38,13 @@ interface IPlayer extends Document {
     attackEnemy: Function,
     getCritAmount: Function,
     handleExperience: Function,
-    postBattleXp: Function,
+    gainXpAfterKillingEnemy: Function,
     rebirth: Function,
     removeCurrency: Function,
+    gainGoldAfterKillingEnemy: Function,
+    loseGoldAfterLosingToEnemy: Function,
+    getExperienceNeededForLevel: Function,
+    getLevelForCurrentExperience: Function,
 }
 
 const PlayerSchema = new Schema({
@@ -79,16 +80,6 @@ const PlayerSchema = new Schema({
         min: 0,
     },
     experience: {
-        type: Number,
-        default: 0,
-        min: 0,
-    },
-    nextLevelExperience: {
-        type: Number,
-        default: 11,
-        min: 11,
-    },
-    maxLevelExperience: {
         type: Number,
         default: 0,
         min: 0,
@@ -230,18 +221,16 @@ PlayerSchema.methods.getHeroClass = function (): string {
     return this.get('class') || 'Hero';
 };
 
-PlayerSchema.methods.setHeroClass = function (heroClass: string){
+PlayerSchema.methods.setHeroClass = function (heroClass: string) {
     heroClass = heroClass.toLowerCase();
     const newHeroClass = heroClass.charAt(0).toUpperCase() + heroClass.slice(1).trim();
     const options: Array<String> = ['Berserker', 'Wizard', 'Ranger', 'Cleric', 'Tinkerer'];
 
-    if (options.includes(newHeroClass)) {
-        this.class = newHeroClass;
-        return true;
+    if (!options.includes(newHeroClass)) {
+        throw new Error('Invalid hero class');
     }
-    else{
-        return false;
-    }
+
+    this.class = newHeroClass;
 
     return this.save();
 };
@@ -256,37 +245,31 @@ PlayerSchema.methods.getSkillpoint = function (skillpoint: string) {
 
 PlayerSchema.methods.getHeroClassDescription = function () {
 
-    if(!this.class)
-    {
-    return 'All heroes are destined for greatness, your journey begins now. When you reach level 10 you can choose your path and select a heroclass.';
+    if (!this.class) {
+        return 'All heroes are destined for greatness, your journey begins now. When you reach level 10 you can choose your path and select a heroclass.';
     }
 
-    if(this.class === 'Berserker')
-    {
-    return 'Berserkers have the option to rage and add big bonuses to attacks, but fumbles hurt. Use the rage command when attacking in an adventure.';
+    if (this.class === 'Berserker') {
+        return 'Berserkers have the option to rage and add big bonuses to attacks, but fumbles hurt. Use the rage command when attacking in an adventure.';
     }
 
-    if(this.class === 'Wizard')
-    {
-    return `Wizards have the option to focus and add large bonuses to their magic, but their focus can sometimes go astray...
+    if (this.class === 'Wizard') {
+        return `Wizards have the option to focus and add large bonuses to their magic, but their focus can sometimes go astray...
     Use the focus command when attacking in an adventure.`;
     }
 
-    if(this.class === 'Ranger')
-    {
-    return `Rangers can gain a special pet, which can find items and give reward bonuses.
+    if (this.class === 'Ranger') {
+        return `Rangers can gain a special pet, which can find items and give reward bonuses.
     Use the pet command to see pet options.`;
     }
 
-    if(this.class === 'Tinkerer')
-    {
-    return `Tinkerers can forge two different items into a device bound to their very soul.
+    if (this.class === 'Tinkerer') {
+        return `Tinkerers can forge two different items into a device bound to their very soul.
     Use the forge command.`;
     }
 
-    if(this.class === 'Cleric')
-    {
-    return `Clerics can bless the entire group when praying.
+    if (this.class === 'Cleric') {
+        return `Clerics can bless the entire group when praying.
     Use the bless command when fighting in an adventure.`;
     }
 };
@@ -318,18 +301,22 @@ PlayerSchema.methods.setRebirths = function (rebirths: number) {
     return this.save();
 };
 
-PlayerSchema.methods.setExperience = function (xp: number) {
-    this.xp = xp;
+PlayerSchema.methods.setExperience = async function (experience: number) {
+    this.experience = experience;
+
+    await this.handleLevelUp();
 
     return this.save();
 };
 
-PlayerSchema.methods.giveExperience = function (xp: number) {
-    if (typeof xp === 'string') {
-        xp = parseInt(xp);
+PlayerSchema.methods.giveExperience = async function (experience: number) {
+    if (typeof experience === 'string') {
+        experience = parseInt(experience);
     }
 
-    this.xp += xp;
+    this.experience += experience;
+
+    await this.handleLevelUp();
 
     return this.save();
 };
@@ -345,7 +332,7 @@ PlayerSchema.methods.addCurrency = function (amount: number) {
         amount = parseInt(amount);
     }
 
-    this.currency = (this.currency + amount);
+    this.currency = Math.ceil(this.currency + amount);
 
     return this.save();
 };
@@ -355,7 +342,7 @@ PlayerSchema.methods.removeCurrency = function (amount: number) {
         amount = parseInt(amount);
     }
 
-    this.currency -= amount;
+    this.currency -= Math.ceil(amount);
 
     return this.save();
 };
@@ -379,90 +366,96 @@ PlayerSchema.methods.unban = function () {
 };
 
 PlayerSchema.methods.attackEnemy = function (enemy: IEnemy, action: String) {
-    const player = this.id;
-    const roll = Math.floor(Math.random() * 50);
-    const baseDamage = this.getStat('attack');
-    const baseInt = this.getStat('intelligence');
-    const attTotalDamage = ((baseDamage + roll) + this.rebirths);
-    const spellTotalDamage = ((baseInt + roll) + this.rebirths);
+    let roll = Math.floor(Math.random() * 50);
+
+    if (roll === 0) {
+        roll = 1;
+    }
 
     if (action === 'attack') {
+        const damage = ((this.getStat('attack') + roll) + this.rebirths);
+
         return <PlayerAttack>{
-            player: player,
+            player: this,
             roll: roll,
-            baseDamage: baseDamage,
+            baseDamage: damage,
             critDamage: 10,
-            totalDamage: attTotalDamage,
+            totalDamage: damage
         };
     }
     if (action === 'spell') {
+        const damage = ((this.getStat('intelligence') + roll) + this.rebirths);
+
         return <PlayerAttack>{
-            player: player,
+            player: this.toObject(),
             roll: roll,
-            baseDamage: baseInt,
+            baseDamage: damage,
             critDamage: 10,
-            totalDamage: spellTotalDamage,
+            totalDamage: damage,
         };
     }
 }
 
-PlayerSchema.methods.postBattleXp = function (player: IPlayer, enemy: IEnemy,) {
-    const newXp = (this.experience + enemy.baseXp);
+PlayerSchema.methods.gainXpAfterKillingEnemy = async function (enemy: IEnemy, area: IArea) {
+    const xpGained = enemy.baseHp * enemy.xpMultiplier * area.xpMultiplier;
 
-    player.experience = newXp;
-    this.checkExperience(newXp);
+    await this.giveExperience(xpGained);
 
-    return;
+    return xpGained;
 };
 
-PlayerSchema.methods.checkExperience = async function (newXp: number) {
-    const newExperience = newXp;
-    this.experience = newExperience;
+PlayerSchema.methods.gainGoldAfterKillingEnemy = async function (enemy: IEnemy, area: IArea) {
+    const goldGained = (enemy.baseHp * 10) * enemy.goldMultiplier * area.goldMultiplier;
 
-    // If the player levels up
-    if (newExperience >= this.nextLevelExperience) {
-        const newLevel = (this.level + 1);
+    await this.addCurrency(goldGained);
 
-        const newLevelAfterCheck = await this.checkLevelUp(newLevel);
+    return goldGained;
+}
 
-        this.level = newLevelAfterCheck;
-        const newNextLevelXp = Math.round(Math.pow((newLevelAfterCheck + 1), 3.5));
+PlayerSchema.methods.loseGoldAfterLosingToEnemy = async function (enemy: IEnemy, area: IArea) {
+    const goldLost = enemy.baseHp * enemy.goldMultiplier * area.goldMultiplier * 0.3;
 
-        this.nextLevelExperience = newNextLevelXp;
-        this.checkExperience(newExperience);
-        return;
-    } else if (newExperience < this.nextLevelExperience) {
-        this.experience = newExperience;
+    await this.removeCurrency(goldLost);
+
+    return goldLost;
+}
+
+PlayerSchema.methods.getExperienceNeededForLevel = function (level: number) {
+    return Math.ceil(Math.pow(level, 3.5));
+}
+
+PlayerSchema.methods.getLevelForCurrentExperience = function (enemy: IEnemy, area: IArea) {
+    // https://stackoverflow.com/a/9309300/405529
+    return Math.ceil(Math.pow(this.experience, 1 / 3.5));
+}
+
+PlayerSchema.methods.handleLevelUp = async function () {
+    const levelForCurrentExperience = this.getLevelForCurrentExperience();
+    let newLevel = levelForCurrentExperience;
+
+    if (levelForCurrentExperience > this.maxLevel) {
+        this.experience = this.getExperienceNeededForLevel(this.maxLevel);
+
+        newLevel = this.maxLevel;
     }
+
+    this.level = newLevel;
 
     return this.save();
 };
 
-PlayerSchema.methods.checkLevelUp = async function (newLevel: number) {
-    let newLevelAfterCheck = new Number;
-
-    if (newLevel >= this.maxLevel) {
-        newLevelAfterCheck = this.maxLevel;
-    } else {
-        newLevelAfterCheck = newLevel;
-    }
-
-    return newLevelAfterCheck;
-};
-
 PlayerSchema.methods.rebirth = async function () {
-    let able = false;
-
-    if (this.level >= this.maxLevel) {
-        this.maxLevel = this.maxLevel + 10;
-        this.level = 0;
-        this.rebirths = (this.rebirths + 1);
-        able = true;
-        return able;
-    } else {
-        able = false;
-        return able;
+    if (this.level < this.maxLevel) {
+        throw new Error('Cannot rebirth');
     }
+
+    this.experience = 1;
+    this.level = 1;
+
+    this.rebirths += 1
+    this.maxLevel += 10;
+
+    return this.save();
 };
 
 const Player = model<IPlayer>('Player', PlayerSchema);

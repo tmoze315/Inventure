@@ -41,24 +41,20 @@ class GenericCommands extends BaseCommands {
     async rebirth() {
         let targetPlayerId = this.message.author.id;
         const player: IPlayer | null = await Player.findOne({ id: targetPlayerId }).exec();
-        console.log(player);
 
-        if (!player){
+        if (!player) {
             this.message.channel.send('Player not found. Please try again');
             return;
         }
-        const able = await player.rebirth(targetPlayerId);
 
-        if(able === true)
-        {
-            this.message.channel.send(makeRebirthSuccessMessage(player.username,player.maxLevel));
+        try {
+            await player.rebirth(targetPlayerId);
+
+            this.message.channel.send(makeRebirthSuccessMessage(player.username, player.maxLevel));
             return;
+        } catch (error) {
+            this.message.channel.send(makeRebirthFailureMessage(player.username, player.maxLevel));
         }
-        else
-        {
-            this.message.channel.send(makeRebirthFailureMessage(player.username,player.maxLevel));
-        }
-        
     }
 
     async stats(playerId?: string) {
@@ -92,8 +88,7 @@ class GenericCommands extends BaseCommands {
             return;
         }
 
-        if(!heroclass)
-        {
+        if (!heroclass) {
             this.message.channel.send(makeShowHeroclassesMessage(player.get('username')));
             return;
         }
@@ -112,17 +107,10 @@ class GenericCommands extends BaseCommands {
         }
 
         try {
-            const able = await player.setHeroClass(heroclass);
-            
-            if (able === true){
-                await player.removeCurrency(costToChangeHeroClass);
-                this.message.channel.send(makeClassSelectedMessage(player.get('username'), player.get('class')));
-            }
-            if (able === false){
-                this.message.channel.send(makeInvalidHeroclassMessage(player.get('username')));
-            }
+            await player.setHeroClass(heroclass);
+            await player.removeCurrency(costToChangeHeroClass);
 
-            
+            this.message.channel.send(makeClassSelectedMessage(player.get('username'), player.get('class')));
         } catch (exception) {
             this.message.channel.send(makeInvalidHeroclassMessage(player.get('username')));
         }

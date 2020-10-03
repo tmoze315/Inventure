@@ -3,14 +3,12 @@ import BaseCommands from "./base-commands";
 import { differenceInMilliseconds } from 'date-fns';
 import { makeCanAdventureMessage } from "../messages/can-adventure";
 import { makeCannotAdventureMessage } from "../messages/cannot-adventure";
-import { makeCurrentlyAdventuringMessage } from "../messages/currently-adventuring";
 import { makeAdventureBattleMessage } from "../messages/adventure-battle";
 import { makeTimeRemainingMessage } from "../messages/time-remaining";
 import { makeAdventureResults } from "../messages/adventure-results";
 import { IArea } from "../areas/base-area";
 import { IBoss, IEnemy } from "../interfaces/enemy";
 import { makeStandardMessage } from "../messages/standard-message";
-import { makeAdventureInProgressMessage } from "../messages/adventure-in-progress";
 import { makeSummonBossConfirmationMessage } from "../messages/summon-boss-confirmation";
 import { makeSummonBossMessage } from "../messages/summon-boss";
 import { makeErrorMessage } from "../messages/error";
@@ -18,13 +16,10 @@ import { makeSuccessMessage } from "../messages/success";
 import { makeLockedMessage } from "../messages/locked";
 import { makeCannotSummonBossMessage } from "../messages/cannot-summon-boss";
 import { IPlayer, Player } from "../models/Player"
-import { AdventureResult } from "../models/AdventureResult"
-import { promises } from "fs";
-import { id } from "date-fns/locale";
-import { stringify } from "querystring";
 
 
 interface CurrentAdventure {
+    area: IArea,
     reactions: Collection<String, MessageReaction> | null,
     enemy: IEnemy,
     durationInMiliseconds: number
@@ -42,6 +37,7 @@ interface PlayerResult {
 }
 
 interface PlayerAttack {
+    player: any,
     roll: number,
     baseDamage: number,
     critDamage: number,
@@ -156,6 +152,7 @@ class AdventureCommands extends BaseCommands {
         message.delete();
 
         return <CurrentAdventure>{
+            area,
             reactions,
             enemy,
             durationInMiliseconds
@@ -221,65 +218,59 @@ class AdventureCommands extends BaseCommands {
             }
         }
 
-        // await Promise.all([all]);
-        console.log(allPlayerResults);
-
-
         // TODO: Make sure we only count one reaction from each user
-
-        // GET BASE ATTACK
-
-        // let damage = attackingUsers.
-
-        let absoluteDamage = 0;
-
-        for (let i = 0; i < allPlayerResults.length; i++) {
-            absoluteDamage += allPlayerResults[i].totalDamage;
-        }
+        const totalDamage = allPlayerResults.reduce((currentTotal: number, playerResult: PlayerResult) => {
+            return playerResult.totalDamage + currentTotal;
+        }, 0);
 
         let won = false;
+        let totalXp = 0;
+        let totalGold = 0;
 
-        if (absoluteDamage >= adventure.enemy.baseHp) {
+        if (totalDamage >= adventure.enemy.baseHp) {
             won = true;
 
-            const adventureResultsMessageWin = makeAdventureResults(won, adventure.enemy, absoluteDamage, allPlayerResults);
+            const adventureResultsMessageWin = makeAdventureResults(won, adventure.enemy, totalDamage, allPlayerResults);
             this.message.channel.send(adventureResultsMessageWin);
 
             for (let i = 0; i < allPlayerResults.length; i++) {
-                const thisPlayer: IPlayer = allPlayerResults[i].player;
+                const currentPlayer: IPlayer = allPlayerResults[i].player;
 
-                await thisPlayer.postBattleXp(thisPlayer, adventure.enemy);
+                const xpGained = await currentPlayer.gainXpAfterKillingEnemy(adventure.enemy, adventure.area);
+                const goldGained = await currentPlayer.gainGoldAfterKillingEnemy(adventure.enemy, adventure.area);
+
+                totalXp += xpGained;
+                totalGold += goldGained;
             }
-        }
 
-        if (absoluteDamage < adventure.enemy.baseHp) {
+            if (adventure.enemy.type === 'mini-boss') {
+                await this.guild.giveQuestItemForCurrentArea();
+
+                const questItems = this.guild.getQuestItemsForCurrentArea();
+
+                if (this.guild.hasEnoughQuestItemsForBossInCurrentArea()) {
+                    this.message.channel.send(makeSuccessMessage(`Congratulations! You have collected enough ${adventure.area.questItem} quest items (${questItems}/${adventure.area.totalQuestItemsNeeded}). You may summon the area boss by using \`-boss\`.`));
+                } else {
+                    this.message.channel.send(makeStandardMessage(`The enemy dropped one ${adventure.area.questItem}. You now have (${questItems}/${adventure.area.totalQuestItemsNeeded}) ${adventure.area.name} quest items.`));
+                }
+            }
+
+            await this.guild.gainExperience(totalXp * 0.2);
+            await this.guild.giveCurrency(totalGold * 0.2);
+        } else if (totalDamage < adventure.enemy.baseHp) {
             won = false;
-            const adventureResultsMessageLose = makeAdventureResults(won, adventure.enemy, absoluteDamage, allPlayerResults);
+
+            for (let i = 0; i < allPlayerResults.length; i++) {
+                const currentPlayer: IPlayer = allPlayerResults[i].player;
+
+                await currentPlayer.loseGoldAfterLosingToEnemy(adventure.enemy, adventure.area);
+            }
+
+            const adventureResultsMessageLose = makeAdventureResults(won, adventure.enemy, totalDamage, allPlayerResults);
             this.message.channel.send(adventureResultsMessageLose);
         }
 
-        const isMiniBoss = true;
-
-        if (won && isMiniBoss) {
-            await this.guild.giveQuestItemForCurrentArea();
-
-            // TODO, pass this in
-            const currentArea = this.guild.getCurrentArea();
-            const questItems = this.guild.getQuestItemsForCurrentArea();
-
-            if (this.guild.hasEnoughQuestItemsForBossInCurrentArea()) {
-                this.message.channel.send(makeSuccessMessage(`Congratulations! You have collected enough ${currentArea.questItem} quest items (${questItems}/${currentArea.totalQuestItemsNeeded}). You may summon the area boss by using \`-boss\`.`));
-            } else {
-                this.message.channel.send(makeStandardMessage(`The enemy dropped one ${currentArea.questItem}. You now have (${questItems}/${currentArea.totalQuestItemsNeeded}) ${currentArea.name} quest items.`));
-            }
-        }
-
         return this.guild.startAdventureCooldown();
-
-        // TODO: End battle (update data in Guild model)
-
-        // TODO: Handle rewards & losses
-
     }
 
     async summonAreaBoss() {
@@ -399,7 +390,7 @@ class AdventureCommands extends BaseCommands {
         // START BOSS FIGHT
         const enemy = area.getBoss();
 
-        const fightReactions = await this.awaitReactionsToBattle(enemy, area, () => {
+        const fightReactions: CurrentAdventure | null = await this.awaitReactionsToBattle(enemy, area, () => {
             const desc = [
                 `On the other side of some thick undergrowth, you notice a small reservoir with the moon reflecting off the surface. You slowly walk forward when you start to hear the sound of bones grinding and clunking...`,
                 `You turn to look in the direction of the noise and see what looks like lightning charging up in the trees. As it charges up, the light starts to reveal a skeleton of a dragon. But it's moving... You realise that lightning bolt is being charged from its mouth and is aimed right at you!`,
@@ -420,8 +411,102 @@ class AdventureCommands extends BaseCommands {
                 .setImage(enemy.image);
         });
 
-        console.log(fightReactions);
-        console.log('TODO: Determin battle results');
+        if (!fightReactions || !fightReactions.reactions) {
+            return;
+        }
+
+        // TODO: Make sure we only count one reaction from each user
+        const allEmojis = fightReactions.reactions.keyArray() || [];
+        const allReactions: Array<MessageReaction> = fightReactions.reactions.array() || [];
+
+        const allPlayerResults: Array<PlayerResult> = [];
+
+        for (let index = 0; index < fightReactions.reactions.size; index++) {
+            const emoji = allEmojis[index];
+            const reaction = allReactions[index];
+
+            const totalReactions = reaction?.count || 0;
+
+            // Ignore the bot's reaction
+            if (totalReactions <= 1) {
+                continue;
+            }
+
+            const users = reaction.users.cache.filter((user: any): boolean => {
+                return !user.bot;
+            }).array();
+
+            let action = null;
+
+            if ('⚔️' === emoji) {
+                action = 'attack';
+            }
+            if ('✨' === emoji) {
+                action = 'spell';
+            }
+            if ('🏃‍♂️' === emoji) {
+                action = 'run';
+            }
+
+            if (!action) {
+                continue;
+            }
+
+            for (let i = 0; i < users.length; i++) {
+                const player: IPlayer | null = await Player.findOne({ id: users[i].id }).exec();
+                const playerAttack: PlayerAttack = player?.attackEnemy(enemy, action);
+
+                const playerResult = <PlayerResult>{
+                    player,
+                    action,
+                    roll: playerAttack.roll,
+                    baseDamage: playerAttack.baseDamage,
+                    critDamage: playerAttack.critDamage,
+                    totalDamage: playerAttack.baseDamage + playerAttack.roll,
+                };
+
+                allPlayerResults.push(playerResult);
+            }
+        }
+
+        const totalDamage = allPlayerResults.reduce((currentTotal: number, playerResult: PlayerResult) => {
+            return playerResult.totalDamage + currentTotal;
+        }, 0);
+
+        let won = false;
+        let totalXp = 0;
+        let totalGold = 0;
+
+        if (totalDamage >= enemy.baseHp) {
+            won = true;
+
+            const adventureResultsMessageWin = makeAdventureResults(won, enemy, totalDamage, allPlayerResults);
+            this.message.channel.send(adventureResultsMessageWin);
+
+            for (let i = 0; i < allPlayerResults.length; i++) {
+                const currentPlayer: IPlayer = allPlayerResults[i].player;
+
+                const xpGained = await currentPlayer.gainXpAfterKillingEnemy(enemy, area);
+                const goldGained = await currentPlayer.gainGoldAfterKillingEnemy(enemy, area);
+
+                totalXp += xpGained;
+                totalGold += goldGained;
+            }
+
+            await this.guild.gainExperience(totalXp * 0.2);
+            await this.guild.giveCurrency(totalGold * 0.2);
+        } else if (totalDamage < enemy.baseHp) {
+            won = false;
+
+            for (let i = 0; i < allPlayerResults.length; i++) {
+                const currentPlayer: IPlayer = allPlayerResults[i].player;
+
+                await currentPlayer.loseGoldAfterLosingToEnemy(enemy, area);
+            }
+
+            const adventureResultsMessageLose = makeAdventureResults(won, enemy, totalDamage, allPlayerResults);
+            this.message.channel.send(adventureResultsMessageLose);
+        }
         // END BOSS FIGHT
 
         await this.guild.startAreaBossCooldown();

@@ -3,6 +3,12 @@ import { IPlayer } from '../models/Player';
 
 const makeStatsMessage = (player: IPlayer) => {
     // TODO: Actually make stats pull from player data
+    let nextLevel = player.get('level') + 1;
+    const maxLevel = player.get('maxLevel');
+
+    if (nextLevel > maxLevel) {
+        nextLevel = maxLevel;
+    }
 
     const desc = [
         player.getHeroClassDescription(),
@@ -23,8 +29,8 @@ const makeStatsMessage = (player: IPlayer) => {
         `**Extra information**`,
         `\`\`\`css`,
         `- Currency: ${player.get('currency').toLocaleString()}`,
-        `- Experience: ${player.get('experience').toLocaleString()}/${player.get('nextLevelExperience')}`,
-        `- Unspent Skillpoints: ${player.getSkillpoint('unspent')}`,
+        `- Experience: ${player.get('experience').toLocaleString()}/${player.getExperienceNeededForLevel(nextLevel).toLocaleString()}`,
+        `- Unspent Skillpoints: ${player.getSkillpoint('unspent')} `,
         `\`\`\``,
     ];
 

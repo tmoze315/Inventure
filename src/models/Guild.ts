@@ -35,6 +35,8 @@ interface IGuild extends Document {
     canSummonAreaBoss: Function,
     getAreaBossCooldown: Function,
     startAreaBossCooldown: Function,
+    giveCurrency: Function,
+    gainExperience: Function,
 }
 
 const GuildSchema = new Schema({
@@ -201,6 +203,28 @@ GuildSchema.methods.canAfford = function (amount: number) {
     }
 
     return this.currency >= amount;
+}
+
+GuildSchema.methods.giveCurrency = function (amount: number) {
+    if (typeof amount === 'string') {
+        amount = parseInt(amount);
+    }
+
+    this.currency += amount;
+
+    return this.save();
+}
+
+GuildSchema.methods.gainExperience = function (amount: number) {
+    if (typeof amount === 'string') {
+        amount = parseInt(amount);
+    }
+
+    this.experience += amount;
+
+    // TODO: level up
+
+    return this.save();
 }
 
 GuildSchema.methods.getQuestItemsForCurrentArea = function () {

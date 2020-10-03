@@ -1,9 +1,8 @@
 import { EmbedFieldData } from 'discord.js';
 import { MessageEmbed } from 'discord.js';
-import { CurrentAdventure } from "../commands/adventure-commands"
-import { IEnemy } from "../interfaces/enemy"
+import { IBoss, IEnemy } from "../interfaces/enemy"
 import { PlayerResult } from "../commands/adventure-commands"
-const makeAdventureResults = (won: boolean, enemy: IEnemy, absoluteDamge: number, allPlayerResults: PlayerResult[]) => {
+const makeAdventureResults = (won: boolean, enemy: IEnemy | IBoss, absoluteDamge: number, allPlayerResults: PlayerResult[]) => {
     let color = 'DARK_GREEN';
 
     let desc = [
@@ -19,25 +18,22 @@ const makeAdventureResults = (won: boolean, enemy: IEnemy, absoluteDamge: number
             `TODO: Make this clever`,
         ];
     }
-     
+
     // \n💥 Bonus Damage: 301
     let embed = new MessageEmbed()
         .setColor(color) // WIN/LOSE colours
         .setDescription(desc.join('\n'))
-        for (let i = 0; i < allPlayerResults.length; i++) {
-        
+    for (let i = 0; i < allPlayerResults.length; i++) {
+
         let emoji = new String;
- 
-        if (allPlayerResults[i].action === 'attack')    
-        {
+
+        if (allPlayerResults[i].action === 'attack') {
             emoji = '⚔️';
         }
-        if (allPlayerResults[i].action === 'spell')    
-        {
+        if (allPlayerResults[i].action === 'spell') {
             emoji = '✨';
         }
-        if (allPlayerResults[i].action === 'run')    
-        {
+        if (allPlayerResults[i].action === 'run') {
             emoji = '🏃‍♂️';
         }
 
@@ -51,7 +47,7 @@ const makeAdventureResults = (won: boolean, enemy: IEnemy, absoluteDamge: number
         )
 
     }
-        return embed;
+    return embed;
 }
 
 export { makeAdventureResults };

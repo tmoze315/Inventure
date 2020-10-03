@@ -177,7 +177,8 @@ class AdminCommands extends BaseCommands {
             return;
         }
 
-        await targetPlayer.setLevel(level);
+        const xp = targetPlayer.getExperienceNeededForLevel(level);
+        await targetPlayer.setExperience(xp);
 
         this.message.channel.send(makeLevelChangedMessage(targetPlayer.get('username'), level));
     }
@@ -237,7 +238,7 @@ class AdminCommands extends BaseCommands {
 
         await targetPlayer.giveExperience(xp);
 
-        this.message.channel.send(makeXPLevelChangedMessage(targetPlayer.get('username'), xp));
+        this.message.channel.send(makeXPLevelChangedMessage(targetPlayer.get('username'), targetPlayer.get('experience')));
     }
 
     // Change any players rebirth level

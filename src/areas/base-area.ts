@@ -14,6 +14,8 @@ interface IArea {
     emoji: string;
     questItem: string;
     totalQuestItemsNeeded: number;
+    xpMultiplier: number;
+    goldMultiplier: number;
 }
 
 /**
@@ -35,6 +37,8 @@ abstract class BaseArea implements IArea {
     public emoji: string = '🗺';
     public questItem: string = '🗝';
     public totalQuestItemsNeeded: number = 5;
+    public xpMultiplier: number = 1.0;
+    public goldMultiplier: number = 1.0;
 
     protected abstract miniBossSpawnsOneIn: number;
     protected abstract getEnemyPool(): Array<IEnemy>;
