@@ -8,6 +8,7 @@ export default {
     start: { class: GenericCommands, method: 'start' },
     stats: { class: GenericCommands, method: 'stats' },
     heroclass: { class: GenericCommands, method: 'selectHeroclass' },
+    rebirth: { class: GenericCommands, method: 'rebirth' },
 
     // Adventuring Commands
     adventure: { class: AdventureCommands, method: 'adventure' },

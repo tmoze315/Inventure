@@ -82,7 +82,8 @@ import AdventureConfig from './config/adventure';
 
         commandInstance[route.method](...args);
     });
-
+    
     // Log our bot in using the token from https://discord.com/developers/applications
     client.login(AdventureConfig.discordKey);
+
 })();

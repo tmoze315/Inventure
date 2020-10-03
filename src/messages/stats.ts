@@ -10,7 +10,7 @@ const makeStatsMessage = (player: IPlayer) => {
         `**Attributes**`,
         `\`\`\`css`,
         `{ Rebirths: ${player.getRebirths()} }`,
-        `{ Max-Level: ${player.getMaxLevel()} (TODO) }`,
+        `{ Max-Level: ${player.getMaxLevel()} }`,
         ``,
         `- Attack: ${player.getStat('attack')} [+${player.getSkillpoint('attack')}]`,
         `- Charisma: ${player.getStat('charisma')} [+${player.getSkillpoint('charisma')}]`,
@@ -23,7 +23,7 @@ const makeStatsMessage = (player: IPlayer) => {
         `**Extra information**`,
         `\`\`\`css`,
         `- Currency: ${player.get('currency').toLocaleString()}`,
-        `- Experience: ${player.get('experience').toLocaleString()}/TODO`,
+        `- Experience: ${player.get('experience').toLocaleString()}/${player.get('nextLevelExperience')}`,
         `- Unspent Skillpoints: ${player.getSkillpoint('unspent')}`,
         `\`\`\``,
     ];

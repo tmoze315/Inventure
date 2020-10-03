@@ -4,8 +4,10 @@ const enemies = [
     <IEnemy>{
         name: 'Bayhill - Abyssal Demon 30hp',
         prefix: 'an',
+        baseXp: 100,
         baseHp: 486,
         basePersuasionResistance: 659,
+
         image: 'https://www.maxpixel.net/static/photo/1x/Fire-Demon-Flames-Chaos-Burn-Inflamed-Devil-Hell-2708544.jpg',
         type: 'standard',
         battleDurationMinutes: 1,
@@ -13,6 +15,7 @@ const enemies = [
     <IEnemy>{
         name: 'Bayhill - Abyssal Demon 20hp',
         prefix: 'an',
+        baseXp: 100,
         baseHp: 539,
         basePersuasionResistance: 693,
         image: 'https://www.maxpixel.net/static/photo/1x/Fire-Demon-Flames-Chaos-Burn-Inflamed-Devil-Hell-2708544.jpg',
@@ -22,6 +25,7 @@ const enemies = [
     <IEnemy>{
         name: 'Bayhill - Abyssal Demon 40hp',
         prefix: 'an',
+        baseXp: 100,
         baseHp: 730,
         basePersuasionResistance: 613,
         image: 'https://www.maxpixel.net/static/photo/1x/Fire-Demon-Flames-Chaos-Burn-Inflamed-Devil-Hell-2708544.jpg',
@@ -31,6 +35,7 @@ const enemies = [
     <IEnemy>{
         name: 'Bayhill - Abyssal Demon 35hp',
         prefix: 'an',
+        baseXp: 100,
         baseHp: 792,
         basePersuasionResistance: 503,
         image: 'https://www.maxpixel.net/static/photo/1x/Fire-Demon-Flames-Chaos-Burn-Inflamed-Devil-Hell-2708544.jpg',
@@ -40,6 +45,7 @@ const enemies = [
     <IEnemy>{
         name: 'Bayhill - Abyssal Demon 50hp',
         prefix: 'an',
+        baseXp: 100,
         baseHp: 293,
         basePersuasionResistance: 608,
         image: 'https://www.maxpixel.net/static/photo/1x/Fire-Demon-Flames-Chaos-Burn-Inflamed-Devil-Hell-2708544.jpg',
@@ -499,6 +505,7 @@ const enemies = [
     <IEnemy>{
         name: 'Bayhill - Bronze Dragon',
         prefix: 'a',
+        baseXp: 100,
         baseHp: 1458,
         basePersuasionResistance: 1170,
         image: 'https://cdn.pixabay.com/photo/2017/01/13/07/57/dragon-1976596_960_720.jpg',

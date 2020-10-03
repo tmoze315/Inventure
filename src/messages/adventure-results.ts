@@ -1,11 +1,13 @@
 import { EmbedFieldData } from 'discord.js';
 import { MessageEmbed } from 'discord.js';
-
-const makeAdventureResults = (won: boolean) => {
+import { CurrentAdventure } from "../commands/adventure-commands"
+import { IEnemy } from "../interfaces/enemy"
+import { PlayerResult } from "../commands/adventure-commands"
+const makeAdventureResults = (won: boolean, enemy: IEnemy, absoluteDamge: number, allPlayerResults: PlayerResult[]) => {
     let color = 'DARK_GREEN';
 
     let desc = [
-        `The group killed the Ascended Cave Lion (1,267/892).`,
+        `The group killed the ${enemy.name} (${absoluteDamge}/${enemy.baseHp}).`,
         `TODO: Make this clever`,
     ];
 
@@ -13,26 +15,43 @@ const makeAdventureResults = (won: boolean) => {
         color = 'DARK_RED';
 
         desc = [
-            `The group got killed (167/892).`,
+            `The group got killed by the ${enemy.name} (${absoluteDamge}/${enemy.baseHp}).`,
             `TODO: Make this clever`,
         ];
     }
-
-    return new MessageEmbed()
+     
+    // \n💥 Bonus Damage: 301
+    let embed = new MessageEmbed()
         .setColor(color) // WIN/LOSE colours
         .setDescription(desc.join('\n'))
-        .addFields([
+        for (let i = 0; i < allPlayerResults.length; i++) {
+        
+        let emoji = new String;
+ 
+        if (allPlayerResults[i].action === 'attack')    
+        {
+            emoji = '⚔️';
+        }
+        if (allPlayerResults[i].action === 'spell')    
+        {
+            emoji = '✨';
+        }
+        if (allPlayerResults[i].action === 'run')    
+        {
+            emoji = '🏃‍♂️';
+        }
+
+        embed.addFields(
             <EmbedFieldData>{
-                name: 'tmoze315',
-                value: `🎲 Rolled a 20\n⚔️ Damage: 400`,
-                inline: true,
+                name: `${allPlayerResults[i].player.username}`,
+                value: `🎲 (${allPlayerResults[i].roll}) + ${emoji} (${allPlayerResults[i].baseDamage}) = 💥 (${allPlayerResults[i].totalDamage})`,
+                inline: false,
             },
-            <EmbedFieldData>{
-                name: 'YoItsBK',
-                value: `🎲 Rolled a 20\n⚔️ Damage: 400\n💥 Bonus Damage: 301`,
-                inline: true,
-            },
-        ]);
+            // Bonus Damage Not Added Yet
+        )
+
+    }
+        return embed;
 }
 
 export { makeAdventureResults };

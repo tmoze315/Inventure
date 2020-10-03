@@ -1,6 +1,7 @@
 interface IEnemy {
     name: string,
     baseHp: number,
+    baseXp: number,
     basePersuasionResistance: number,
     image: string,
     prefix: string,
@@ -13,6 +14,7 @@ interface IBoss {
     name: string,
     description: string,
     baseHp: number,
+    baseXp: number,
     basePersuasionResistance: number,
     image: string,
     battleDurationMinutes: number,
