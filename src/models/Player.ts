@@ -45,6 +45,19 @@ interface IPlayer extends Document {
     loseGoldAfterLosingToEnemy: Function,
     getExperienceNeededForLevel: Function,
     getLevelForCurrentExperience: Function,
+    postBattleRewards: Function,
+}
+
+interface RewardResult {
+    player: IPlayer,
+    xpRoll: number,
+    goldRoll: number,
+    xpBonusPercentage: number,
+    goldBonusPercentage: number,
+    baseGold: number,
+    baseXp: number,
+    totalGold: number,
+    totalXp: number,
 }
 
 const PlayerSchema = new Schema({
@@ -275,8 +288,32 @@ PlayerSchema.methods.getHeroClassDescription = function () {
 };
 
 PlayerSchema.methods.getHeroClassThumbnail = function () {
-    return 'https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/5cc20b78734ffe0d264885ada90cd961/CLASSBarbarian.JPG';
-};
+
+    if (!this.class) {
+        return 'https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/618476d18c95662c3352f18b5c3b5118/CLASSRogue.JPG';
+    }
+
+    if (this.class === 'Berserker') {
+        return 'https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/5cc20b78734ffe0d264885ada90cd961/CLASSBarbarian.JPG';
+    }
+
+    if (this.class === 'Wizard') {
+        return `https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/34b30b92157ecc2bf75af2bcf708ba5a/CLASSWizard.JPG`;
+    }
+
+    if (this.class === 'Ranger') {
+        return `https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/2f0bc2ec03ff460ee815abe46b725347/CLASSRanger.JPG`;
+    }
+
+    if (this.class === 'Tinkerer') {
+        return `https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/b633bd0239f0ee1ef5f47272c7814c01/CLASSNecromancer.JPG`;
+    }
+
+    if (this.class === 'Cleric') {
+        return `https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/56783c25637a39cb722076bec44bb29e/CLASSCleric.JPG`;
+    }
+}
+    
 
 PlayerSchema.methods.getRebirths = function () {
     return this.get('rebirths') || 0;
@@ -374,38 +411,40 @@ PlayerSchema.methods.attackEnemy = function (enemy: IEnemy, action: String) {
 
     if (action === 'attack') {
         const damage = ((this.getStat('attack') + roll) + this.rebirths);
+        const baseDamage = this.getStat('attack');
 
         return <PlayerAttack>{
             player: this,
             roll: roll,
-            baseDamage: damage,
+            baseDamage: baseDamage,
             critDamage: 10,
             totalDamage: damage
         };
     }
     if (action === 'spell') {
         const damage = ((this.getStat('intelligence') + roll) + this.rebirths);
+        const baseDamage = this.getStat('intelligence');
 
         return <PlayerAttack>{
             player: this.toObject(),
             roll: roll,
-            baseDamage: damage,
+            baseDamage: baseDamage,
             critDamage: 10,
             totalDamage: damage,
         };
     }
 }
 
-PlayerSchema.methods.gainXpAfterKillingEnemy = async function (enemy: IEnemy, area: IArea) {
-    const xpGained = enemy.baseHp * enemy.xpMultiplier * area.xpMultiplier;
+PlayerSchema.methods.gainXpAfterKillingEnemy = async function (enemy: IEnemy, area: IArea, rewardresult: RewardResult) {
+    const xpGained = rewardresult.totalXp;
 
     await this.giveExperience(xpGained);
 
     return xpGained;
 };
 
-PlayerSchema.methods.gainGoldAfterKillingEnemy = async function (enemy: IEnemy, area: IArea) {
-    const goldGained = (enemy.baseHp * 10) * enemy.goldMultiplier * area.goldMultiplier;
+PlayerSchema.methods.gainGoldAfterKillingEnemy = async function (enemy: IEnemy, area: IArea, rewardresult: RewardResult) {
+    const goldGained = rewardresult.totalGold;
 
     await this.addCurrency(goldGained);
 
@@ -458,6 +497,56 @@ PlayerSchema.methods.rebirth = async function () {
     return this.save();
 };
 
+PlayerSchema.methods.postBattleRewards = function (player: IPlayer, enemy: IEnemy, area: IArea) {
+
+    const goldRoll = Math.floor(Math.random() * 50);
+    const xpRoll = Math.floor(Math.random() * 50);
+    let bonusGoldPercentage = 0;
+    let bonusXpPercentage = 0;
+    const baseGold = Math.round((enemy.baseHp * 10)) * enemy.goldMultiplier * area.goldMultiplier;
+    const baseXp =  Math.round(enemy.baseHp * enemy.xpMultiplier * area.xpMultiplier);
+    
+    if (goldRoll >= 20){
+        bonusGoldPercentage = 1.2;
+    }
+
+    else if (goldRoll >= 10){
+        bonusGoldPercentage = 1.15;
+    }
+
+    else {
+        bonusGoldPercentage = 1;
+    }
+
+    if (xpRoll >= 20){
+        bonusXpPercentage = 1.2;
+    }
+
+    else if (xpRoll >= 10){
+        bonusXpPercentage = 1.15;
+    }
+
+    else {
+        bonusXpPercentage = 1;
+    }
+
+    const totalGold = Math.round(baseGold * bonusGoldPercentage);
+    const totalXp = Math.round(baseXp * bonusXpPercentage);
+
+
+    return <RewardResult>{
+        player: player,
+        xpRoll: xpRoll,
+        goldRoll: goldRoll,
+        xpBonusPercentage: bonusXpPercentage,
+        goldBonusPercentage: bonusGoldPercentage,
+        baseGold: baseGold,
+        baseXp: baseXp,
+        totalGold: totalGold,
+        totalXp: totalXp,
+    };
+};
+
 const Player = model<IPlayer>('Player', PlayerSchema);
 
-export { Player, PlayerSchema, IPlayer };
+export { Player, PlayerSchema, IPlayer, RewardResult };

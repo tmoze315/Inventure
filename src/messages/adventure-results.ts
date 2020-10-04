@@ -6,7 +6,7 @@ const makeAdventureResults = (won: boolean, enemy: IEnemy | IBoss, absoluteDamge
     let color = 'DARK_GREEN';
 
     let desc = [
-        `The group killed the ${enemy.name} (${absoluteDamge}/${enemy.baseHp}).`,
+        `The group killed the ${enemy.name} **(${absoluteDamge}/${enemy.baseHp})**.`,
         `TODO: Make this clever`,
     ];
 
@@ -14,7 +14,7 @@ const makeAdventureResults = (won: boolean, enemy: IEnemy | IBoss, absoluteDamge
         color = 'DARK_RED';
 
         desc = [
-            `The group got killed by the ${enemy.name} (${absoluteDamge}/${enemy.baseHp}).`,
+            `The group got killed by the ${enemy.name} **(${absoluteDamge}/${enemy.baseHp})**.`,
             `TODO: Make this clever`,
         ];
     }
@@ -26,6 +26,7 @@ const makeAdventureResults = (won: boolean, enemy: IEnemy | IBoss, absoluteDamge
     for (let i = 0; i < allPlayerResults.length; i++) {
 
         let emoji = new String;
+
 
         if (allPlayerResults[i].action === 'attack') {
             emoji = '⚔️';

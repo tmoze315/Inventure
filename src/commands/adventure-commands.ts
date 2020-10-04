@@ -6,6 +6,7 @@ import { makeCannotAdventureMessage } from "../messages/cannot-adventure";
 import { makeAdventureBattleMessage } from "../messages/adventure-battle";
 import { makeTimeRemainingMessage } from "../messages/time-remaining";
 import { makeAdventureResults } from "../messages/adventure-results";
+import { makeAdventureRewards } from "../messages/adventure-rewards";
 import { IArea } from "../areas/base-area";
 import { IBoss, IEnemy } from "../interfaces/enemy";
 import { makeStandardMessage } from "../messages/standard-message";
@@ -15,7 +16,7 @@ import { makeErrorMessage } from "../messages/error";
 import { makeSuccessMessage } from "../messages/success";
 import { makeLockedMessage } from "../messages/locked";
 import { makeCannotSummonBossMessage } from "../messages/cannot-summon-boss";
-import { IPlayer, Player } from "../models/Player"
+import { IPlayer, Player, RewardResult } from "../models/Player"
 
 
 interface CurrentAdventure {
@@ -230,14 +231,20 @@ class AdventureCommands extends BaseCommands {
         if (totalDamage >= adventure.enemy.baseHp) {
             won = true;
 
+            const allRewardResults: Array<RewardResult> = [];
+
             const adventureResultsMessageWin = makeAdventureResults(won, adventure.enemy, totalDamage, allPlayerResults);
             this.message.channel.send(adventureResultsMessageWin);
 
             for (let i = 0; i < allPlayerResults.length; i++) {
                 const currentPlayer: IPlayer = allPlayerResults[i].player;
 
-                const xpGained = await currentPlayer.gainXpAfterKillingEnemy(adventure.enemy, adventure.area);
-                const goldGained = await currentPlayer.gainGoldAfterKillingEnemy(adventure.enemy, adventure.area);
+                const rewardResult = await currentPlayer.postBattleRewards(currentPlayer, adventure.enemy, adventure.area);
+
+                allRewardResults.push(rewardResult);
+
+                const xpGained = await currentPlayer.gainXpAfterKillingEnemy(adventure.enemy, adventure.area, rewardResult);
+                const goldGained = await currentPlayer.gainGoldAfterKillingEnemy(adventure.enemy, adventure.area, rewardResult);
 
                 totalXp += xpGained;
                 totalGold += goldGained;
@@ -254,6 +261,8 @@ class AdventureCommands extends BaseCommands {
                     this.message.channel.send(makeStandardMessage(`The enemy dropped one ${adventure.area.questItem}. You now have (${questItems}/${adventure.area.totalQuestItemsNeeded}) ${adventure.area.name} quest items.`));
                 }
             }
+            const adventureRewardsMessageWin = makeAdventureRewards(allPlayerResults, allRewardResults);
+            this.message.channel.send(adventureRewardsMessageWin);
 
             await this.guild.gainExperience(totalXp * 0.2);
             await this.guild.giveCurrency(totalGold * 0.2);
