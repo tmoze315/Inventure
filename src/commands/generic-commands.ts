@@ -12,6 +12,8 @@ import { makeStatsMessage } from "../messages/stats";
 import { Player, IPlayer } from '../models/Player';
 import BaseCommands from "./base-commands";
 import { makeShowHeroclassesMessage } from "../messages/show-heroclasses";
+import { makeInsufficientSkillpointsMessage } from "../messages/insufficient-skillpoints";
+import { makeUsedSkillpointsMessage } from "../messages/used-skillpoints";
 
 class GenericCommands extends BaseCommands {
     // stats([first, last]: [string?, string?]) {
@@ -72,6 +74,36 @@ class GenericCommands extends BaseCommands {
         }
 
         this.message.channel.send(makeStatsMessage(player));
+       
+    }
+
+    async skillpoints(skill: string, amount?: number) {
+        let targetPlayerId = this.message.author.id;
+
+        const player: IPlayer | null = await Player.findOne({ id: targetPlayerId }).exec();
+
+        if (!player) {
+            this.message.channel.send('Player not found. Please try again');
+            return;
+        }
+
+        if (!skill){
+            this.message.channel.send(makeErrorMessage(`You must include the desired skill using -skill [skill name]!`));
+            return;
+        }
+
+        const useSkill = await player.useSkillpoints(skill, amount, player);
+
+        if(!useSkill.worked){
+        const skillpointsNotUsedMessage = makeInsufficientSkillpointsMessage(player.username);
+        this.message.channel.send(skillpointsNotUsedMessage);
+        }
+
+        if(useSkill.worked){
+        const skillpointsUsedMessage = makeUsedSkillpointsMessage(useSkill);
+        this.message.channel.send(skillpointsUsedMessage);
+        }
+
     }
 
     // Lets players select their Heroclass

@@ -7,7 +7,7 @@ const makeAdventureResults = (won: boolean, enemy: IEnemy | IBoss, absoluteDamge
 
     let desc = [
         `The group killed the ${enemy.name} **(${absoluteDamge}/${enemy.baseHp})**.`,
-        `TODO: Make this clever`,
+        `Attack Party:`,
     ];
 
     if (!won) {
@@ -15,7 +15,10 @@ const makeAdventureResults = (won: boolean, enemy: IEnemy | IBoss, absoluteDamge
 
         desc = [
             `The group got killed by the ${enemy.name} **(${absoluteDamge}/${enemy.baseHp})**.`,
-            `TODO: Make this clever`,
+            ``,
+            `You tried your best, but couldn't succeed; each of you used ${allPlayerResults[0].goldLoss} gold to repair your gear.`,
+            ``,
+            `Attack Party:`,
         ];
     }
 

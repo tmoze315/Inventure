@@ -3,6 +3,7 @@ import { IEnemy } from '../interfaces/enemy';
 import { ItemSchema } from './Item';
 import { PlayerAttack } from '../commands/adventure-commands';
 import { IArea } from '../areas/base-area';
+import { makeEarnedSkillpoints } from '../messages/earned-skillpoints-and-levelup';
 
 interface IPlayer extends Document {
     id: string,
@@ -46,6 +47,8 @@ interface IPlayer extends Document {
     getExperienceNeededForLevel: Function,
     getLevelForCurrentExperience: Function,
     postBattleRewards: Function,
+    handleSkillpointRewards: Function,
+    useSkillpoints: Function,
 }
 
 interface RewardResult {
@@ -58,6 +61,20 @@ interface RewardResult {
     baseXp: number,
     totalGold: number,
     totalXp: number,
+}
+
+interface EarnedSkillpoints {
+    player: IPlayer,
+    level: number,
+    totalSkillpoints: number,
+    levelUp: boolean,
+}
+
+interface SkillpointResults{
+    player: IPlayer,
+    finalPoints: number,
+    skill: string,
+    worked: boolean,
 }
 
 const PlayerSchema = new Schema({
@@ -402,28 +419,35 @@ PlayerSchema.methods.unban = function () {
     return this.save();
 };
 
-PlayerSchema.methods.attackEnemy = function (enemy: IEnemy, action: String) {
+PlayerSchema.methods.attackEnemy = function (enemy: IEnemy, action: String, area: IArea) {
     let roll = Math.floor(Math.random() * 50);
+
+    const goldLoss = Math.round(enemy.baseHp * enemy.goldMultiplier * area.goldMultiplier * 0.3);
 
     if (roll === 0) {
         roll = 1;
     }
 
     if (action === 'attack') {
-        const damage = ((this.getStat('attack') + roll) + this.rebirths);
-        const baseDamage = this.getStat('attack');
+        const attSkillPoints = this.get(`skillpoints.attack`);
+
+        const damage = ((this.getStat('attack') + roll + attSkillPoints) + this.rebirths);
+        const baseDamage = (this.getStat('attack') + attSkillPoints);
 
         return <PlayerAttack>{
             player: this,
             roll: roll,
             baseDamage: baseDamage,
             critDamage: 10,
-            totalDamage: damage
+            totalDamage: damage,
+            goldLoss,
         };
     }
     if (action === 'spell') {
-        const damage = ((this.getStat('intelligence') + roll) + this.rebirths);
-        const baseDamage = this.getStat('intelligence');
+        const intSkillPoints = this.get(`skillpoints.intelligence`);
+
+        const damage = ((this.getStat('intelligence') + roll + intSkillPoints) + this.rebirths);
+        const baseDamage = (this.getStat('intelligence') + intSkillPoints);
 
         return <PlayerAttack>{
             player: this.toObject(),
@@ -431,6 +455,7 @@ PlayerSchema.methods.attackEnemy = function (enemy: IEnemy, action: String) {
             baseDamage: baseDamage,
             critDamage: 10,
             totalDamage: damage,
+            goldLoss,
         };
     }
 }
@@ -471,7 +496,7 @@ PlayerSchema.methods.getLevelForCurrentExperience = function (enemy: IEnemy, are
 PlayerSchema.methods.handleLevelUp = async function () {
     const levelForCurrentExperience = this.getLevelForCurrentExperience();
     let newLevel = levelForCurrentExperience;
-
+ 
     if (levelForCurrentExperience > this.maxLevel) {
         this.experience = this.getExperienceNeededForLevel(this.maxLevel);
 
@@ -480,12 +505,61 @@ PlayerSchema.methods.handleLevelUp = async function () {
 
     this.level = newLevel;
 
-    return this.save();
+//    const save = this.save();
+
+    return newLevel;
 };
+
+PlayerSchema.methods.handleSkillpointRewards = async function (startLevel: number, endLevel: number, player: IPlayer) {
+    
+    let allPassedLevels = [];
+    let sumEven = 0;
+    let levelUp = false;
+
+    for (let i = startLevel + 1; i <= endLevel; i++) {
+    allPassedLevels.push(i);
+    }
+
+    if(allPassedLevels.length > 0){
+    for (let i = 0; i <= allPassedLevels.length; i++) {
+        if (allPassedLevels[i] % 2 === 0) {
+          sumEven++;
+        }
+    }
+}
+const currentPoints = this.get(`skillpoints.unspent`);
+const newPoints = this.set(`skillpoints.unspent`, (sumEven + Number(currentPoints)));
+
+    if(startLevel < endLevel)
+    {
+        levelUp = true;
+    }
+    else{
+        levelUp = false;
+    }
+const save = this.save();
+
+    console.log(allPassedLevels);
+    return <EarnedSkillpoints>{
+        player: this,
+        level: endLevel,
+        totalSkillpoints: sumEven,
+        levelUp: levelUp,
+        }
+};
+
 
 PlayerSchema.methods.rebirth = async function () {
     if (this.level < this.maxLevel) {
         throw new Error('Cannot rebirth');
+    }
+
+    const options: Array<String> = ['attack', 'charisma', 'intelligence','unspent'];
+    
+
+    for (let i = 0; i <= options.length; i++) {
+        const currentPointsInSkill = this.get(`skillpoints.${options[i]}`);
+        const newPointsInSkill = this.set(`skillpoints.${options[i]}`, 0 );
     }
 
     this.experience = 1;
@@ -505,7 +579,7 @@ PlayerSchema.methods.postBattleRewards = function (player: IPlayer, enemy: IEnem
     let bonusXpPercentage = 0;
     const baseGold = Math.round((enemy.baseHp * 10)) * enemy.goldMultiplier * area.goldMultiplier;
     const baseXp =  Math.round(enemy.baseHp * enemy.xpMultiplier * area.xpMultiplier);
-    
+
     if (goldRoll >= 20){
         bonusGoldPercentage = 1.2;
     }
@@ -547,6 +621,60 @@ PlayerSchema.methods.postBattleRewards = function (player: IPlayer, enemy: IEnem
     };
 };
 
+PlayerSchema.methods.useSkillpoints = async function (desiredSkill: string, amount?: number) {
+    
+    let realAmount = 0;
+    let skill = desiredSkill.toLowerCase();
+    let worked = false;
+
+    const options: Array<String> = ['attack', 'charisma', 'intelligence', 'att', 'cha', 'int'];
+
+    if (!options.includes(skill)) {
+        worked = false;
+        return;
+    }
+
+    if(skill == 'att'){
+        skill = 'attack';
+    }
+    if(skill == 'cha'){
+        skill = 'charisma';
+    }
+    if(skill == 'int'){
+        skill = 'intelligence';
+    }
+
+    if(!amount){
+        realAmount = 1;
+    }
+    if(amount){
+        realAmount = amount;
+    }
+
+    
+    const currentPoints = this.get(`skillpoints.unspent`);
+
+    if(currentPoints >= realAmount){
+        const currentPointsInSkill = this.get(`skillpoints.${skill}`);
+        const newPointsInSkill = this.set(`skillpoints.${skill}`, (Number(currentPointsInSkill) + Number(realAmount)));
+        const removeUnspent = this.set(`skillpoints.unspent`, (Number(currentPoints) - Number(realAmount)));
+        worked = true;
+
+    }
+    else{
+        worked = false;
+    }
+    const finalPointsInSkill = await this.get(`skillpoints.${skill}`);
+    const save = await this.save();
+
+    return <SkillpointResults>{
+        player: this,
+        finalPoints: finalPointsInSkill,
+        skill,
+        worked,
+    }
+};
+
 const Player = model<IPlayer>('Player', PlayerSchema);
 
-export { Player, PlayerSchema, IPlayer, RewardResult };
+export { Player, PlayerSchema, IPlayer, RewardResult, EarnedSkillpoints, SkillpointResults };

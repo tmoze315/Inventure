@@ -9,6 +9,7 @@ export default {
     stats: { class: GenericCommands, method: 'stats' },
     heroclass: { class: GenericCommands, method: 'selectHeroclass' },
     rebirth: { class: GenericCommands, method: 'rebirth' },
+    skill: {class: GenericCommands, method: 'skillpoints'},
 
     // Adventuring Commands
     adventure: { class: AdventureCommands, method: 'adventure' },

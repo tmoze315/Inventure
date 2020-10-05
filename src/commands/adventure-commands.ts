@@ -16,7 +16,8 @@ import { makeErrorMessage } from "../messages/error";
 import { makeSuccessMessage } from "../messages/success";
 import { makeLockedMessage } from "../messages/locked";
 import { makeCannotSummonBossMessage } from "../messages/cannot-summon-boss";
-import { IPlayer, Player, RewardResult } from "../models/Player"
+import { EarnedSkillpoints, IPlayer, Player, RewardResult } from "../models/Player"
+import { makeEarnedSkillpoints } from "../messages/earned-skillpoints-and-levelup"
 
 
 interface CurrentAdventure {
@@ -33,7 +34,7 @@ interface PlayerResult {
     baseDamage: number,
     critDamage: number,
     totalDamage: number,
-
+    goldLoss: number,
     // Can add 'fumbled', 'crit' etc to this later
 }
 
@@ -42,6 +43,7 @@ interface PlayerAttack {
     roll: number,
     baseDamage: number,
     critDamage: number,
+    goldLoss: number,
 }
 
 class AdventureCommands extends BaseCommands {
@@ -204,7 +206,7 @@ class AdventureCommands extends BaseCommands {
 
             for (let i = 0; i < users.length; i++) {
                 const player: IPlayer | null = await Player.findOne({ id: users[i].id }).exec();
-                const playerAttack: PlayerAttack = player?.attackEnemy(adventure.enemy, action);
+                const playerAttack: PlayerAttack = player?.attackEnemy(adventure.enemy, action, adventure.area);
 
                 const playerResult = <PlayerResult>{
                     player,
@@ -213,6 +215,7 @@ class AdventureCommands extends BaseCommands {
                     baseDamage: playerAttack.baseDamage,
                     critDamage: playerAttack.critDamage,
                     totalDamage: playerAttack.baseDamage + playerAttack.roll,
+                    goldLoss: playerAttack.goldLoss,
                 };
 
                 allPlayerResults.push(playerResult);
@@ -231,7 +234,10 @@ class AdventureCommands extends BaseCommands {
         if (totalDamage >= adventure.enemy.baseHp) {
             won = true;
 
+            
+
             const allRewardResults: Array<RewardResult> = [];
+            const allSkillpointRewards: Array<EarnedSkillpoints> = [];
 
             const adventureResultsMessageWin = makeAdventureResults(won, adventure.enemy, totalDamage, allPlayerResults);
             this.message.channel.send(adventureResultsMessageWin);
@@ -239,15 +245,24 @@ class AdventureCommands extends BaseCommands {
             for (let i = 0; i < allPlayerResults.length; i++) {
                 const currentPlayer: IPlayer = allPlayerResults[i].player;
 
-                const rewardResult = await currentPlayer.postBattleRewards(currentPlayer, adventure.enemy, adventure.area);
+                const startLevel = await currentPlayer.level;
 
+                const rewardResult = await currentPlayer.postBattleRewards(currentPlayer, adventure.enemy, adventure.area);
+                
                 allRewardResults.push(rewardResult);
 
                 const xpGained = await currentPlayer.gainXpAfterKillingEnemy(adventure.enemy, adventure.area, rewardResult);
                 const goldGained = await currentPlayer.gainGoldAfterKillingEnemy(adventure.enemy, adventure.area, rewardResult);
 
+                const endLevel = await currentPlayer.level;
+                const earnedSkillpoints = await currentPlayer.handleSkillpointRewards(startLevel, endLevel, currentPlayer);
+
                 totalXp += xpGained;
                 totalGold += goldGained;
+
+                
+                // console.log(earnedSkillpoints);
+                allSkillpointRewards.push(earnedSkillpoints);
             }
 
             if (adventure.enemy.type === 'mini-boss') {
@@ -261,8 +276,25 @@ class AdventureCommands extends BaseCommands {
                     this.message.channel.send(makeStandardMessage(`The enemy dropped one ${adventure.area.questItem}. You now have (${questItems}/${adventure.area.totalQuestItemsNeeded}) ${adventure.area.name} quest items.`));
                 }
             }
+
+            let levelUpCount = 0;
+
+            for (let i = 0; i < allSkillpointRewards.length; i++) {
+                if(allSkillpointRewards[i].levelUp == true){
+                    levelUpCount++;
+                }
+            }
+
+            
             const adventureRewardsMessageWin = makeAdventureRewards(allPlayerResults, allRewardResults);
             this.message.channel.send(adventureRewardsMessageWin);
+
+            console.log(allSkillpointRewards);
+
+            if(levelUpCount > 0){
+            const earnedSkillpointsMessage = makeEarnedSkillpoints(allSkillpointRewards);
+            this.message.channel.send(earnedSkillpointsMessage);
+            }
 
             await this.guild.gainExperience(totalXp * 0.2);
             await this.guild.giveCurrency(totalGold * 0.2);
