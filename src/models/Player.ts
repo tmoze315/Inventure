@@ -1,9 +1,13 @@
 import { Schema, model, Document } from 'mongoose';
 import { IEnemy } from '../interfaces/enemy';
-import { ItemSchema } from './Item';
+import { Item, ItemSchema } from './Item';
 import { PlayerAttack } from '../commands/adventure-commands';
 import { IArea } from '../areas/base-area';
 import { makeEarnedSkillpoints } from '../messages/earned-skillpoints-and-levelup';
+import { IItem } from '../models/Item'
+import { isIterationStatement } from 'typescript';
+import _ from 'lodash';
+
 
 interface IPlayer extends Document {
     id: string,
@@ -49,6 +53,15 @@ interface IPlayer extends Document {
     postBattleRewards: Function,
     handleSkillpointRewards: Function,
     useSkillpoints: Function,
+    makeItem: Function,
+    clearBag: Function,
+    postBattleLootRewards: Function,
+    giveChest: Function,
+    returnLoot: Function,
+    returnBackpack: Function,
+    sortBackpack: Function,
+    equip: Function,
+    unequipItemExternal: Function,
 }
 
 interface RewardResult {
@@ -76,6 +89,23 @@ interface SkillpointResults{
     skill: string,
     worked: boolean,
 }
+
+interface LootReward{
+    player: IPlayer,
+    normal: number,
+    rare: number,
+    epic: number,
+    legendary: number,
+    ascended: number,
+    set: number,
+    total: number,
+}
+
+interface ItemGenerationResult{
+    items: Array<IItem>,
+    enough: boolean,
+};
+
 
 const PlayerSchema = new Schema({
     id: {
@@ -218,15 +248,15 @@ const PlayerSchema = new Schema({
         },
     },
     gear: {
-        helmet: ItemSchema,
-        gloves: ItemSchema,
-        armor: ItemSchema,
-        weapon: ItemSchema,
-        shield: ItemSchema,
-        boots: ItemSchema,
-        amulet: ItemSchema,
-        ring: ItemSchema,
-        rune: ItemSchema,
+        helmet: [ItemSchema],
+        gloves: [ItemSchema],
+        armor: [ItemSchema],
+        weapon: [ItemSchema],
+        shield: [ItemSchema],
+        boots: [ItemSchema],
+        amulet: [ItemSchema],
+        ring: [ItemSchema],
+        rune: [ItemSchema],
     },
     backpack: [ItemSchema],
     adventures: {
@@ -571,6 +601,50 @@ PlayerSchema.methods.rebirth = async function () {
     return this.save();
 };
 
+PlayerSchema.methods.makeItem = async function (type: string, amount: number)
+{
+    const item: IItem = new Item;
+
+    let realAmount = amount;
+    let realType = type;
+    let enough = false;
+
+    const amountBeforeLoot = Number(this.get(`loot.${realType}`));
+    const amountAfterLoot = (amountBeforeLoot - realAmount);
+
+    let allItemsGenerated = [];
+
+    if(realAmount <= amountBeforeLoot){
+    enough = true;    
+    const thisItem = await item.makeItem(realType, realAmount);
+    allItemsGenerated = thisItem;    
+
+    const setAmountAfterLoot = await this.set(`loot.${realType}`, amountAfterLoot);
+
+    for (let i = 0; i <= thisItem.length; i++) {
+        if(thisItem[i] != null)
+        {
+        this.backpack.push(thisItem[i]);
+        }
+      }
+
+    }
+    
+    if(realAmount > amountBeforeLoot)
+    {
+        enough = false;
+    }
+
+    const save = this.save();
+
+    return <ItemGenerationResult>{
+        items: allItemsGenerated,
+        enough,
+    };
+
+}
+
+
 PlayerSchema.methods.postBattleRewards = function (player: IPlayer, enemy: IEnemy, area: IArea) {
 
     const goldRoll = Math.floor(Math.random() * 50);
@@ -675,6 +749,583 @@ PlayerSchema.methods.useSkillpoints = async function (desiredSkill: string, amou
     }
 };
 
+PlayerSchema.methods.clearBag = async function () {
+
+    this.backpack = [];
+
+    return this.save();
+};
+
+PlayerSchema.methods.postBattleLootRewards = function (player: IPlayer, area: IArea)
+{
+    const normalRoll = Math.random();
+    const rareRoll = Math.random();
+    const epicRoll = Math.random();
+    const legendaryRoll = Math.random();
+    const ascendedRoll = Math.random();
+    const setRoll = Math.random();
+
+    const normalDropRate = area.normalChestDropRate;
+    const rareDropRate = area.rareChestDropRate;
+    const epicDropRate = area.epicChestDropRate;
+    const legendaryDropRate = area.legendaryChestDropRate;
+    const ascendedDropRate = area.ascendedChestDropRate;
+    const setDropRate = area.setChestDropRate;
+
+    let totalNormalChests = 0;
+    let totalRareChests = 0;
+    let totalEpicChests = 0;
+    let totalLegendaryChests = 0;
+    let totalAscendedChests = 0;
+    let totalSetChests = 0;
+
+    if(normalRoll < normalDropRate)
+    {
+        if(normalRoll < (normalDropRate / 2)){
+            totalNormalChests = 2;
+        }
+        totalNormalChests = 1;
+    }
+
+    if(rareRoll < rareDropRate)
+    {
+        if(rareRoll < (rareDropRate / 2)){
+            totalRareChests = 2;
+        }
+        totalRareChests = 1;
+    }
+
+    if(epicRoll < epicDropRate)
+    {
+        if(normalRoll < (normalDropRate / 2)){
+            totalEpicChests = 2;
+        }
+        totalEpicChests = 1;
+    }
+
+    if(legendaryRoll < legendaryDropRate)
+    {
+        if(legendaryRoll < (legendaryDropRate / 2)){
+            totalLegendaryChests = 2;
+        }
+        totalLegendaryChests = 1;
+    }
+
+    if(ascendedRoll < ascendedDropRate)
+    {
+        if(ascendedRoll < (ascendedDropRate / 2)){
+            totalAscendedChests = 2;
+        }
+        totalAscendedChests = 1;
+    }
+
+    if(setRoll < setDropRate)
+    {
+        if(setRoll < (setDropRate / 2)){
+            totalSetChests = 2;
+        }
+        totalSetChests = 1;
+    }
+
+    const total = totalNormalChests + totalRareChests + totalEpicChests + totalLegendaryChests + totalAscendedChests + totalSetChests;
+
+    const loot: LootReward = {
+        player: player,
+        normal: totalNormalChests,
+        rare: totalRareChests,
+        epic: totalEpicChests,
+        legendary: totalLegendaryChests,
+        ascended: totalAscendedChests,
+        set: totalSetChests,
+        total,
+    }
+
+    const give = this.giveChest(loot);
+    return give;
+}
+
+PlayerSchema.methods.giveChest = async function (loot: LootReward) {
+
+
+    const currentNormalChests = this.get(`loot.normal`);
+    const newNormalChests = await this.set(`loot.normal`, currentNormalChests + loot.normal);
+
+    const currentRareChests = this.get(`loot.rare`);
+    const newRareChests = await this.set(`loot.rare`, currentRareChests + loot.rare);
+
+    const currentEpicChests = this.get(`loot.epic`);
+    const newEpicChests = await this.set(`loot.epic`, currentEpicChests + loot.epic);
+
+    const currentLegendaryChests = this.get(`loot.legendary`);
+    const newLegendaryChests = await this.set(`loot.legendary`, currentLegendaryChests + loot.legendary);
+
+    const currentAscendedChests = this.get(`loot.ascended`);
+    const newAscendedChests = await this.set(`loot.ascended`, currentAscendedChests + loot.ascended);
+
+    const currentSetChests = this.get(`loot.sets`);
+    const newSetChests = await this.set(`loot.sets`, currentSetChests + loot.set);
+
+
+    return loot;
+};
+
+PlayerSchema.methods.returnLoot = async function (player: IPlayer) {
+
+    const totalNormalChests = player.get(`loot.normal`);
+    const totalRareChests = player.get(`loot.rare`);
+    const totalEpicChests = player.get(`loot.epic`);
+    const totalLegendaryChests = player.get(`loot.legendary`);
+    const totalAscendedChests = player.get(`loot.ascended`);
+    const totalSetChests = player.get(`loot.sets`);
+    const totalChests = totalNormalChests + totalRareChests + totalEpicChests + totalLegendaryChests + totalAscendedChests + totalSetChests;
+
+    const loot: LootReward = {
+        player: player,
+        normal: totalNormalChests,
+        rare: totalRareChests,
+        epic: totalEpicChests,
+        legendary: totalLegendaryChests,
+        ascended: totalAscendedChests,
+        set: totalSetChests,
+        total: totalChests,
+    }
+
+
+    return loot;
+};
+
+PlayerSchema.methods.returnBackpack = async function () {
+
+    //let allItems: Array<IItem> = [];
+    //let currentBackpack = this.get('backpack');
+
+    const sorted: Array<IItem> = await this.sortBackpack();
+
+    //for (let i = 0; i <= sorted.length; i++) {
+    //    allItems.push(sorted[i])
+    //}
+    //console.log(sorted);
+    return sorted;
+};
+
+PlayerSchema.methods.sortBackpack = async function () {
+
+    const currentBackpack: Array<IItem> = this.get('backpack');
+
+    const sorted = await _.sortBy(currentBackpack,[{slot: 'charm'},{slot: 'ring'},{slot: 'two handed'},{slot: 'right'},{slot: 'left'},{slot: 'boots'},{slot: 'legs'},{slot: 'belt'},{slot: 'gloves'},{slot: 'chest'},{slot: 'neck'},{slot: 'head'},{rarity: 'normal'},{rarity: 'rare'},{rarity: 'epic'},{rarity: 'legendary'},{rarity: 'ascended'},{rarity: 'set'}]);
+    return sorted;
+}
+
+PlayerSchema.methods.equip = async function (name: string, player: IPlayer) {
+
+    const itemName = name;
+    const check = await this.checkPlayerHaveItem(itemName);
+
+    const currentBackpack: Array<IItem> = this.get('backpack');
+
+    let selectedItem;
+    let worked = false;
+
+    let noItem;
+
+    if(check)
+    {
+        noItem = false;
+
+        for (let i = 0; i < currentBackpack.length; i++) {
+            if(currentBackpack[i].name.includes(name))
+            {
+                selectedItem = currentBackpack[i];
+            }
+
+            
+        }
+
+        if(!selectedItem){
+            return;
+        }
+
+        let slot = 'helmet';
+        for (let i = 0; i < 15; i++) {
+            if(selectedItem?.slot == 'head')
+            {
+                slot = 'helmet';
+            }
+            if(selectedItem?.slot == 'neck')
+            {
+                slot = 'amulet';
+            }
+            if(selectedItem?.slot == 'chest')
+            {
+                slot = 'armor';
+            }
+            if(selectedItem?.slot == 'left' || selectedItem?.slot == 'right' || selectedItem?.slot == 'two handed')
+            {
+                slot = 'weapon';
+            }
+            if(selectedItem?.slot == 'boots')
+            {
+                slot = 'boots';
+            }
+            if(selectedItem?.slot == 'legs')
+            {
+                slot = 'boots';
+            }
+            if(selectedItem?.slot == 'charm')
+            {
+                slot = 'rune';
+            }
+            if(selectedItem?.slot == 'ring')
+            {
+                slot = 'ring';
+            }
+            if(selectedItem?.slot == 'gloves')
+            {
+                slot = 'gloves';
+            }
+        }
+        
+        const selectedItemSlot = slot;
+
+        const checkSlot = await this.checkPlayerHaveAnyItemEquippedSlot(player, slot)
+
+        console.log(checkSlot);
+
+        if(checkSlot.hasEquipped == false)
+        {
+        const equipItem = await this.set(`gear.${selectedItemSlot}`, selectedItem);
+
+        const setStats = await this.setStatsUponEquip(selectedItem);
+
+        const removeFromBackpack = this.backpack.pull(selectedItem);
+
+        worked = true;
+        }
+        if(checkSlot.hasEquipped == true)
+        {
+        const unequipItem = await this.unequipItemInternal(checkSlot.selectedItem, player);
+        if(unequipItem){
+
+        const equipItem = await this.set(`gear.${selectedItemSlot}`, selectedItem);
+
+        const setStats = await this.setStatsUponEquip(selectedItem);  
+
+        const removeFromBackpack = this.backpack.pull(selectedItem);
+        
+        }
+        worked = true;
+        }
+        const save = this.save();
+    }
+
+    if(!check)
+    {
+        noItem = true;
+    }
+
+    
+    return {worked, noItem, selectedItem};
+}
+
+PlayerSchema.methods.setStatsUponEquip = async function (selectedItem: IItem) {
+
+    const currentBackpack: Array<IItem> = this.get('backpack');
+    let worked = false;
+
+    const currentAtt = await this.get(`stats.attack`);
+    const currentCha = await this.get(`stats.charisma`);
+    const currentInt = await this.get(`stats.intelligence`);
+    const currentDex = await this.get(`stats.dexterity`);
+    const currentLuck = await this.get(`stats.luck`);
+
+
+    const equipAtt = await this.set(`stats.attack`, (selectedItem.stats.attack + currentAtt));
+    const equipCha = await this.set(`stats.charisma`, (selectedItem.stats.charisma + currentCha));
+    const equipInt = await this.set(`stats.intelligence`, (selectedItem.stats.intelligence + currentInt));
+    const equipDex = await this.set(`stats.dexterity`, (selectedItem.stats.dexterity + currentDex));
+    const equipLuck = await this.set(`stats.luck`, (selectedItem.stats.luck + currentLuck));
+
+    return this.save();
+
+}
+
+
+PlayerSchema.methods.unequipItemExternal = async function (selectedItemName: string, player: IPlayer) {
+
+
+    const externalItem = selectedItemName;
+
+    if (!selectedItemName){
+        return;
+    }
+
+    const currentlyEquippedItem = await this.checkPlayerHaveItemEquipped(selectedItemName, player);
+
+    console.log(currentlyEquippedItem);
+
+    if(currentlyEquippedItem == undefined)
+    {
+        return;
+    }
+
+    let worked = false;
+    let slot = 'helmet';
+ 
+        if(currentlyEquippedItem.slot == 'head')
+        {
+            slot = 'helmet';
+        }
+        if(currentlyEquippedItem.slot == 'neck')
+        {
+            slot = 'amulet';
+        }
+        if( currentlyEquippedItem.slot == 'chest')
+        {
+            slot = 'armor';
+        }
+        if(currentlyEquippedItem.slot == 'left' || currentlyEquippedItem.slot == 'right' || currentlyEquippedItem.slot == 'two handed')
+        {
+            slot = 'weapon';
+        }
+        if(currentlyEquippedItem.slot == 'boots')
+        {
+            slot = 'boots';
+        }
+        if(currentlyEquippedItem.slot == 'legs')
+        {
+            slot = 'boots';
+        }
+        if(currentlyEquippedItem.slot == 'charm')
+        {
+            slot = 'rune';
+        }
+        if(currentlyEquippedItem.slot == 'ring')
+        {
+            slot = 'ring';
+        }
+        if(currentlyEquippedItem.slot == 'gloves')
+        {
+            slot = 'gloves';
+        }
+    
+
+
+    const gear: IItem = player.get(`gear.${slot}`);
+
+    const currentAtt = await this.get(`stats.attack`);
+    const currentCha = await this.get(`stats.charisma`);
+    const currentInt = await this.get(`stats.intelligence`);
+    const currentDex = await this.get(`stats.dexterity`);
+    const currentLuck = await this.get(`stats.luck`);
+
+    const equipAtt = await this.set(`stats.attack`, (currentAtt - currentlyEquippedItem.stats.attack));
+    const equipCha = await this.set(`stats.charisma`, (currentCha - currentlyEquippedItem.stats.charisma));
+    const equipInt = await this.set(`stats.intelligence`, (currentInt - currentlyEquippedItem.stats.intelligence));
+    const equipDex = await this.set(`stats.dexterity`, (currentDex - currentlyEquippedItem.stats.dexterity));
+    const equipLuck = await this.set(`stats.luck`, (currentLuck - currentlyEquippedItem.stats.luck));
+
+
+    const putBackInBackpack = this.backpack.push(currentlyEquippedItem);
+    let pullEquippedItem = await player.set(`gear.${slot}`, []);
+
+
+    const save = this.save();
+
+    const currentBackpack2: Array<IItem> = this.get('backpack');
+
+    for (let i = 0; i < currentBackpack2.length; i++) {
+        if(currentBackpack2[i].name == (currentlyEquippedItem.name))
+        {
+            worked = true;
+        }
+    }
+    return {worked, currentlyEquippedItem};
+}
+
+PlayerSchema.methods.unequipItemInternal = async function (currentlyEquippedItem: IItem, player: IPlayer) {
+
+let worked = false;
+
+    let slot = 'helmet';
+ 
+        if(currentlyEquippedItem.slot == 'head')
+        {
+            slot = 'helmet';
+        }
+        if(currentlyEquippedItem.slot == 'neck')
+        {
+            slot = 'amulet';
+        }
+        if( currentlyEquippedItem.slot == 'chest')
+        {
+            slot = 'armor';
+        }
+        if(currentlyEquippedItem.slot == 'left' || currentlyEquippedItem.slot == 'right' || currentlyEquippedItem.slot == 'two handed')
+        {
+            slot = 'weapon';
+        }
+        if(currentlyEquippedItem.slot == 'boots')
+        {
+            slot = 'boots';
+        }
+        if(currentlyEquippedItem.slot == 'legs')
+        {
+            slot = 'boots';
+        }
+        if(currentlyEquippedItem.slot == 'charm')
+        {
+            slot = 'rune';
+        }
+        if(currentlyEquippedItem.slot == 'ring')
+        {
+            slot = 'ring';
+        }
+        if(currentlyEquippedItem.slot == 'gloves')
+        {
+            slot = 'gloves';
+        }
+        
+
+    const currentAtt = await this.get(`stats.attack`);
+    const currentCha = await this.get(`stats.charisma`);
+    const currentInt = await this.get(`stats.intelligence`);
+    const currentDex = await this.get(`stats.dexterity`);
+    const currentLuck = await this.get(`stats.luck`);
+
+    const equipAtt = await this.set(`stats.attack`, (currentAtt - currentlyEquippedItem.stats.attack));
+    const equipCha = await this.set(`stats.charisma`, (currentCha - currentlyEquippedItem.stats.charisma));
+    const equipInt = await this.set(`stats.intelligence`, (currentInt - currentlyEquippedItem.stats.intelligence));
+    const equipDex = await this.set(`stats.dexterity`, (currentDex - currentlyEquippedItem.stats.dexterity));
+    const equipLuck = await this.set(`stats.luck`, (currentLuck - currentlyEquippedItem.stats.luck));
+
+
+    let pullEquippedItem = await player.set(`gear.${slot}`, []);
+    //this.gear.slot.pull(currentlyEquippedItem);
+
+    const putBackInBackpack = this.backpack.push(currentlyEquippedItem);
+
+   // const save = this.save();
+
+    const currentBackpack2: Array<IItem> = this.get('backpack');
+
+    for (let i = 0; i < currentBackpack2.length; i++) {
+        if(currentBackpack2[i].name == (currentlyEquippedItem.name))
+        {
+            worked = true;
+        }
+    }
+    return worked;
+}
+
+PlayerSchema.methods.checkPlayerHaveItem = async function (name: string) {
+
+    let has = false;
+
+    const currentBackpack: Array<IItem> = this.get('backpack');
+    
+        for (let i = 0; i < currentBackpack.length; i++) {
+            if(currentBackpack[i].name.includes(name))
+            {
+                has = true;
+            }
+        }
+    
+    return has;
+}
+
+PlayerSchema.methods.checkPlayerHaveItemEquipped = async function (name: string, player: IPlayer) {
+
+    let hasEquipped = false;
+    let selectedItem;
+
+
+    let playerHelmet = await player.get('gear.helmet');
+    if (playerHelmet[0] != undefined && playerHelmet[0].name.includes(name))
+    {
+        selectedItem = playerHelmet[0];
+        hasEquipped = true;
+    }
+
+    let playerGloves = await player.get('gear.gloves');
+    if (playerGloves[0] != undefined && playerGloves[0].name.includes(name))
+    {
+        selectedItem = playerGloves[0];
+        hasEquipped = true;
+    }
+
+    let playerArmor = await player.get('gear.armor');
+    if (playerArmor[0] != undefined && playerArmor[0].name.includes(name))
+    {
+        selectedItem = playerArmor[0];
+        hasEquipped = true;
+    }
+
+    let playerWeapon = await player.get('gear.weapon');
+    if (playerWeapon[0] != undefined && playerWeapon[0].name.includes(name))
+    {
+        selectedItem = playerWeapon[0];
+        hasEquipped = true;
+        }
+
+    let playerShield = await player.get('gear.shield');
+    if (playerShield[0] != undefined && playerShield[0].name.includes(name))
+    {
+        selectedItem = playerShield[0];
+        hasEquipped = true;
+    }
+
+    let playerBoots = await player.get('gear.boots');
+    if (playerBoots[0] != undefined && playerBoots[0].name.includes(name))
+    {
+        selectedItem = playerBoots[0];
+        hasEquipped = true;
+    }
+
+    let playerAmulet = await player.get('gear.amulet');
+    if (playerAmulet[0] != undefined && playerAmulet[0].name.includes(name))
+    {
+        selectedItem = playerAmulet[0];
+        hasEquipped = true;
+    }
+
+    let playerRing = await player.get('gear.ring');
+    if (playerRing[0] != undefined && playerRing[0].name.includes(name))
+    {
+        selectedItem = playerRing[0];
+        hasEquipped = true;
+    }
+
+    let playerRune = await player.get('gear.rune');
+    if (playerRune[0] != undefined && playerRune[0].name.includes(name))
+    {
+        selectedItem = playerRune[0];
+        hasEquipped = true;
+    }
+
+    return selectedItem;
+}
+
+PlayerSchema.methods.checkPlayerHaveAnyItemEquippedSlot = async function (player: IPlayer, slot: string) {
+
+    let hasEquipped = false;
+    let selectedItem;
+
+
+    let playerSlot = await player.get(`gear.${slot}`);
+    if (playerSlot[0] != undefined)
+    {
+        selectedItem = playerSlot[0];
+        hasEquipped = true;
+    }
+
+    return {selectedItem, hasEquipped};
+}
+
+
+
+
+
+
 const Player = model<IPlayer>('Player', PlayerSchema);
 
-export { Player, PlayerSchema, IPlayer, RewardResult, EarnedSkillpoints, SkillpointResults };
+export { Player, PlayerSchema, IPlayer, RewardResult, EarnedSkillpoints, SkillpointResults, LootReward, ItemGenerationResult };

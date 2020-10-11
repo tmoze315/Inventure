@@ -1,4 +1,6 @@
 import dotenv from 'dotenv';
+import _ from 'lodash';
+
 dotenv.config();
 
 import { Message, Client, Guild } from 'discord.js';

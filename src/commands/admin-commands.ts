@@ -152,7 +152,6 @@ class AdminCommands extends BaseCommands {
 
         this.message.channel.send(makeCurrencyAddedMessage(id, targetPlayer.get('currency')));
     }
-
     // Change any players Level
     async changeLevel(level: number, id: string) {
         if (!await this.isAdmin()) {
@@ -268,6 +267,53 @@ class AdminCommands extends BaseCommands {
         );
 
         this.message.channel.send(makeCooldownsResetMessage());
+    }
+
+    async clearBag(id?: string) {
+        if (!await this.isAdmin()) {
+            this.message.channel.send(makeNotAdminMessage(this.message.author.username));
+            return;
+        }
+
+        if (!id || id === '') {
+            this.message.channel.send('Oops! Looks like you forgot to include the username of the bag being cleared! Please try again with -clearbag [@username]');
+            return;
+        }
+
+        const targetPlayerId = id.replace(/[!@<>]/g, '');
+        const targetPlayer: IPlayer | null = await Player.findOne({ id: targetPlayerId }).exec();
+
+        if (!targetPlayer) {
+            this.message.channel.send('Player not found. Please try again');
+            return;
+        }
+
+        await targetPlayer.clearBag();
+
+        this.message.channel.send(makeUnbannedMessage(targetPlayer.get('username')));
+    }
+
+    async generateLoot() {
+        const player: IPlayer | null = await Player.findOne({ id: this.user.id }).exec();
+
+        if (!await this.isAdmin()) {
+            this.message.channel.send(makeNotAdminMessage(this.message.author.username));
+            return;
+        }
+
+        const makeItem = await player?.makeItem();
+        //console.log(makeItem);
+        return;
+
+    }
+
+    async sortBackpack() {
+        const player: IPlayer | null = await Player.findOne({ id: this.user.id }).exec();
+
+        const sort = await player?.sortBackpack();
+        //console.log(makeItem);
+        return;
+
     }
 
 }

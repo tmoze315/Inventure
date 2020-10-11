@@ -3,6 +3,7 @@ import { IPlayer } from '../models/Player';
 
 const makeStatsMessage = (player: IPlayer) => {
     // TODO: Actually make stats pull from player data
+
     let nextLevel = player.get('level') + 1;
     const maxLevel = player.get('maxLevel');
 
@@ -30,7 +31,7 @@ const makeStatsMessage = (player: IPlayer) => {
         `\`\`\`css`,
         `- Currency: ${player.get('currency').toLocaleString()}`,
         `- Experience: ${player.get('experience').toLocaleString()}/${player.getExperienceNeededForLevel(nextLevel).toLocaleString()}`,
-        `- Unspent Skillpoints: ${player.getSkillpoint('unspent')} `,
+        `- Unspent Skillpoints: ${player.getSkillpoint('unspent')}`,
         `\`\`\``,
     ];
 
