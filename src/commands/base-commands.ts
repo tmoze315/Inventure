@@ -1,13 +1,9 @@
-import { Message, User, CollectorFilter } from "discord.js";
+import { Message } from "../discord/message";
 import { IGuild } from "../models/Guild";
 import { IPlayer } from '../models/Player';
 
 export default abstract class BaseCommands {
-    protected user: User;
-
-    constructor(protected message: Message, protected guild: IGuild, protected player: IPlayer) {
-        this.user = message.author;
-    }
+    constructor(protected message: Message, protected guild: IGuild, protected player: IPlayer) { }
 
     countdownSeconds(seconds: number, updateCallback: CallableFunction, endCallback: CallableFunction) {
         const tick = () => {

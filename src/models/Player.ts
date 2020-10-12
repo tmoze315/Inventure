@@ -70,7 +70,7 @@ interface EarnedSkillpoints {
     levelUp: boolean,
 }
 
-interface SkillpointResults{
+interface SkillpointResults {
     player: IPlayer,
     finalPoints: number,
     skill: string,
@@ -330,7 +330,7 @@ PlayerSchema.methods.getHeroClassThumbnail = function () {
         return `https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/56783c25637a39cb722076bec44bb29e/CLASSCleric.JPG`;
     }
 }
-    
+
 
 PlayerSchema.methods.getRebirths = function () {
     return this.get('rebirths') || 0;
@@ -496,7 +496,7 @@ PlayerSchema.methods.getLevelForCurrentExperience = function (enemy: IEnemy, are
 PlayerSchema.methods.handleLevelUp = async function () {
     const levelForCurrentExperience = this.getLevelForCurrentExperience();
     let newLevel = levelForCurrentExperience;
- 
+
     if (levelForCurrentExperience > this.maxLevel) {
         this.experience = this.getExperienceNeededForLevel(this.maxLevel);
 
@@ -505,39 +505,38 @@ PlayerSchema.methods.handleLevelUp = async function () {
 
     this.level = newLevel;
 
-//    const save = this.save();
+    //    const save = this.save();
 
     return newLevel;
 };
 
 PlayerSchema.methods.handleSkillpointRewards = async function (startLevel: number, endLevel: number, player: IPlayer) {
-    
+
     let allPassedLevels = [];
     let sumEven = 0;
     let levelUp = false;
 
     for (let i = startLevel + 1; i <= endLevel; i++) {
-    allPassedLevels.push(i);
+        allPassedLevels.push(i);
     }
 
-    if(allPassedLevels.length > 0){
-    for (let i = 0; i <= allPassedLevels.length; i++) {
-        if (allPassedLevels[i] % 2 === 0) {
-          sumEven++;
+    if (allPassedLevels.length > 0) {
+        for (let i = 0; i <= allPassedLevels.length; i++) {
+            if (allPassedLevels[i] % 2 === 0) {
+                sumEven++;
+            }
         }
     }
-}
-const currentPoints = this.get(`skillpoints.unspent`);
-const newPoints = this.set(`skillpoints.unspent`, (sumEven + Number(currentPoints)));
+    const currentPoints = this.get(`skillpoints.unspent`);
+    const newPoints = this.set(`skillpoints.unspent`, (sumEven + Number(currentPoints)));
 
-    if(startLevel < endLevel)
-    {
+    if (startLevel < endLevel) {
         levelUp = true;
     }
-    else{
+    else {
         levelUp = false;
     }
-const save = this.save();
+    const save = this.save();
 
     console.log(allPassedLevels);
     return <EarnedSkillpoints>{
@@ -545,7 +544,7 @@ const save = this.save();
         level: endLevel,
         totalSkillpoints: sumEven,
         levelUp: levelUp,
-        }
+    }
 };
 
 
@@ -554,13 +553,10 @@ PlayerSchema.methods.rebirth = async function () {
         throw new Error('Cannot rebirth');
     }
 
-    const options: Array<String> = ['attack', 'charisma', 'intelligence','unspent'];
-    
-
-    for (let i = 0; i <= options.length; i++) {
-        const currentPointsInSkill = this.get(`skillpoints.${options[i]}`);
-        const newPointsInSkill = this.set(`skillpoints.${options[i]}`, 0 );
-    }
+    this.set('skillpoints.attack', 0);
+    this.set('skillpoints.charisma', 0);
+    this.set('skillpoints.intelligence', 0);
+    this.set('skillpoints.unspent', 0);
 
     this.experience = 1;
     this.level = 1;
@@ -578,13 +574,13 @@ PlayerSchema.methods.postBattleRewards = function (player: IPlayer, enemy: IEnem
     let bonusGoldPercentage = 0;
     let bonusXpPercentage = 0;
     const baseGold = Math.round((enemy.baseHp * 10)) * enemy.goldMultiplier * area.goldMultiplier;
-    const baseXp =  Math.round(enemy.baseHp * enemy.xpMultiplier * area.xpMultiplier);
+    const baseXp = Math.round(enemy.baseHp * enemy.xpMultiplier * area.xpMultiplier);
 
-    if (goldRoll >= 20){
+    if (goldRoll >= 20) {
         bonusGoldPercentage = 1.2;
     }
 
-    else if (goldRoll >= 10){
+    else if (goldRoll >= 10) {
         bonusGoldPercentage = 1.15;
     }
 
@@ -592,11 +588,11 @@ PlayerSchema.methods.postBattleRewards = function (player: IPlayer, enemy: IEnem
         bonusGoldPercentage = 1;
     }
 
-    if (xpRoll >= 20){
+    if (xpRoll >= 20) {
         bonusXpPercentage = 1.2;
     }
 
-    else if (xpRoll >= 10){
+    else if (xpRoll >= 10) {
         bonusXpPercentage = 1.15;
     }
 
@@ -622,7 +618,7 @@ PlayerSchema.methods.postBattleRewards = function (player: IPlayer, enemy: IEnem
 };
 
 PlayerSchema.methods.useSkillpoints = async function (desiredSkill: string, amount?: number) {
-    
+
     let realAmount = 0;
     let skill = desiredSkill.toLowerCase();
     let worked = false;
@@ -634,34 +630,34 @@ PlayerSchema.methods.useSkillpoints = async function (desiredSkill: string, amou
         return;
     }
 
-    if(skill == 'att'){
+    if (skill == 'att') {
         skill = 'attack';
     }
-    if(skill == 'cha'){
+    if (skill == 'cha') {
         skill = 'charisma';
     }
-    if(skill == 'int'){
+    if (skill == 'int') {
         skill = 'intelligence';
     }
 
-    if(!amount){
+    if (!amount) {
         realAmount = 1;
     }
-    if(amount){
+    if (amount) {
         realAmount = amount;
     }
 
-    
+
     const currentPoints = this.get(`skillpoints.unspent`);
 
-    if(currentPoints >= realAmount){
+    if (currentPoints >= realAmount) {
         const currentPointsInSkill = this.get(`skillpoints.${skill}`);
         const newPointsInSkill = this.set(`skillpoints.${skill}`, (Number(currentPointsInSkill) + Number(realAmount)));
         const removeUnspent = this.set(`skillpoints.unspent`, (Number(currentPoints) - Number(realAmount)));
         worked = true;
 
     }
-    else{
+    else {
         worked = false;
     }
     const finalPointsInSkill = await this.get(`skillpoints.${skill}`);

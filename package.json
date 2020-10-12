@@ -20,7 +20,9 @@
         "start": "npm run tsc && node ./dist/index.js",
         "watch": "npm run tsc && npx tsc-watch --onSuccess \"node ./dist/index.js\"",
         "watch2": "npm run tsc && npx nodemon ./dist/index.js",
-        "tsc": "tsc"
+        "tsc": "tsc",
+        "test:coverage": "ENV_FILE=./.env.test jest --maxWorkers=4 --verbose --coverage",
+        "test": "ENV_FILE=./.env.test jest src/"
     },
     "author": "",
     "license": "ISC",
@@ -39,7 +41,13 @@
         "zlib-sync": "^0.1.7"
     },
     "devDependencies": {
+        "@types/jest": "^26.0.14",
+        "@types/mongodb-memory-server": "^2.3.0",
+        "jest": "^26.5.2",
+        "jest-discordjs-mocks": "^1.0.2",
+        "mongodb-memory-server": "^6.9.2",
         "nodemon": "^2.0.4",
+        "ts-jest": "^26.4.1",
         "tsc-watch": "^4.2.9"
     }
 }

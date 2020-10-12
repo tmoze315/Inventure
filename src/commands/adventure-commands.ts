@@ -49,7 +49,7 @@ interface PlayerAttack {
 class AdventureCommands extends BaseCommands {
     async adventure() {
         if (this.guild.isLocked) {
-            return await this.message.channel.send(makeLockedMessage());
+            return await this.message.send(makeLockedMessage());
         }
 
         const now = new Date;
@@ -58,7 +58,7 @@ class AdventureCommands extends BaseCommands {
             const cooldown = this.guild.getAdventureCooldown();
             const timer = differenceInMilliseconds(cooldown, now);
 
-            const cooldownMessage = await this.message.channel.send(makeCannotAdventureMessage(cooldown, now));
+            const cooldownMessage = await this.message.send(makeCannotAdventureMessage(cooldown, now));
 
             setTimeout(() => {
                 cooldownMessage.edit(makeCanAdventureMessage());
@@ -84,14 +84,14 @@ class AdventureCommands extends BaseCommands {
         const area: IArea | null = this.guild.getCurrentArea();
 
         if (!area) {
-            this.message.channel.send('Oops, it doesn\'t look like you are in an area. Travel somewhere with the `-area` command');
+            this.message.send('Oops, it doesn\'t look like you are in an area. Travel somewhere with the `-area` command');
             return null;
         }
 
         const enemy: IEnemy = area.getRandomEnemy();
 
         return this.awaitReactionsToBattle(enemy, area, () => {
-            return makeAdventureBattleMessage(area, enemy, this.message.author.username);
+            return makeAdventureBattleMessage(area, enemy, this.message.author().username);
         });
     }
 
@@ -128,7 +128,7 @@ class AdventureCommands extends BaseCommands {
             return true;
         };
 
-        const message: Message = await this.message.channel.send(messageCallback());
+        const message: Message = await this.message.send(messageCallback());
 
         message.react('⚔️');
         message.react('✨');
@@ -137,7 +137,7 @@ class AdventureCommands extends BaseCommands {
 
         const duration = enemy.battleDurationMinutes;
 
-        const timerMessage: Message = await this.message.channel.send(makeTimeRemainingMessage(`${duration}m 00s`, 'DARK_GREEN'));
+        const timerMessage: Message = await this.message.send(makeTimeRemainingMessage(`${duration}m 00s`, 'DARK_GREEN'));
 
         await this.countdownMinutes(duration,
             (timeRemaining: string, color: string) => {
@@ -234,13 +234,13 @@ class AdventureCommands extends BaseCommands {
         if (totalDamage >= adventure.enemy.baseHp) {
             won = true;
 
-            
+
 
             const allRewardResults: Array<RewardResult> = [];
             const allSkillpointRewards: Array<EarnedSkillpoints> = [];
 
             const adventureResultsMessageWin = makeAdventureResults(won, adventure.enemy, totalDamage, allPlayerResults);
-            this.message.channel.send(adventureResultsMessageWin);
+            this.message.send(adventureResultsMessageWin);
 
             for (let i = 0; i < allPlayerResults.length; i++) {
                 const currentPlayer: IPlayer = allPlayerResults[i].player;
@@ -248,7 +248,7 @@ class AdventureCommands extends BaseCommands {
                 const startLevel = await currentPlayer.level;
 
                 const rewardResult = await currentPlayer.postBattleRewards(currentPlayer, adventure.enemy, adventure.area);
-                
+
                 allRewardResults.push(rewardResult);
 
                 const xpGained = await currentPlayer.gainXpAfterKillingEnemy(adventure.enemy, adventure.area, rewardResult);
@@ -260,7 +260,7 @@ class AdventureCommands extends BaseCommands {
                 totalXp += xpGained;
                 totalGold += goldGained;
 
-                
+
                 // console.log(earnedSkillpoints);
                 allSkillpointRewards.push(earnedSkillpoints);
             }
@@ -271,29 +271,29 @@ class AdventureCommands extends BaseCommands {
                 const questItems = this.guild.getQuestItemsForCurrentArea();
 
                 if (this.guild.hasEnoughQuestItemsForBossInCurrentArea()) {
-                    this.message.channel.send(makeSuccessMessage(`Congratulations! You have collected enough ${adventure.area.questItem} quest items (${questItems}/${adventure.area.totalQuestItemsNeeded}). You may summon the area boss by using \`-boss\`.`));
+                    this.message.send(makeSuccessMessage(`Congratulations! You have collected enough ${adventure.area.questItem} quest items (${questItems}/${adventure.area.totalQuestItemsNeeded}). You may summon the area boss by using \`-boss\`.`));
                 } else {
-                    this.message.channel.send(makeStandardMessage(`The enemy dropped one ${adventure.area.questItem}. You now have (${questItems}/${adventure.area.totalQuestItemsNeeded}) ${adventure.area.name} quest items.`));
+                    this.message.send(makeStandardMessage(`The enemy dropped one ${adventure.area.questItem}. You now have (${questItems}/${adventure.area.totalQuestItemsNeeded}) ${adventure.area.name} quest items.`));
                 }
             }
 
             let levelUpCount = 0;
 
             for (let i = 0; i < allSkillpointRewards.length; i++) {
-                if(allSkillpointRewards[i].levelUp == true){
+                if (allSkillpointRewards[i].levelUp == true) {
                     levelUpCount++;
                 }
             }
 
-            
+
             const adventureRewardsMessageWin = makeAdventureRewards(allPlayerResults, allRewardResults);
-            this.message.channel.send(adventureRewardsMessageWin);
+            this.message.send(adventureRewardsMessageWin);
 
             console.log(allSkillpointRewards);
 
-            if(levelUpCount > 0){
-            const earnedSkillpointsMessage = makeEarnedSkillpoints(allSkillpointRewards);
-            this.message.channel.send(earnedSkillpointsMessage);
+            if (levelUpCount > 0) {
+                const earnedSkillpointsMessage = makeEarnedSkillpoints(allSkillpointRewards);
+                this.message.send(earnedSkillpointsMessage);
             }
 
             await this.guild.gainExperience(totalXp * 0.2);
@@ -308,7 +308,7 @@ class AdventureCommands extends BaseCommands {
             }
 
             const adventureResultsMessageLose = makeAdventureResults(won, adventure.enemy, totalDamage, allPlayerResults);
-            this.message.channel.send(adventureResultsMessageLose);
+            this.message.send(adventureResultsMessageLose);
         }
 
         return this.guild.startAdventureCooldown();
@@ -318,17 +318,17 @@ class AdventureCommands extends BaseCommands {
         const area: IArea | null = this.guild.getCurrentArea();
 
         if (!area) {
-            this.message.channel.send(makeErrorMessage('Sorry, you are not currently in any area'));
+            this.message.send(makeErrorMessage('Sorry, you are not currently in any area'));
             return;
         }
 
         if (this.guild.isLocked) {
-            this.message.channel.send(makeLockedMessage());
+            this.message.send(makeLockedMessage());
             return;
         }
 
         if (!this.guild.hasEnoughQuestItemsForBossInCurrentArea()) {
-            this.message.channel.send(makeErrorMessage(`You have not collected enough ${area.questItem} quest items in ${area.name}. You currently have (${this.guild.getQuestItemsForCurrentArea()}/${area.totalQuestItemsNeeded})`));
+            this.message.send(makeErrorMessage(`You have not collected enough ${area.questItem} quest items in ${area.name}. You currently have (${this.guild.getQuestItemsForCurrentArea()}/${area.totalQuestItemsNeeded})`));
             return;
         }
 
@@ -337,7 +337,7 @@ class AdventureCommands extends BaseCommands {
         if (!this.guild.canSummonAreaBoss(now)) {
             const cooldown = this.guild.getAreaBossCooldown();
 
-            this.message.channel.send(makeCannotSummonBossMessage(cooldown, now));
+            this.message.send(makeCannotSummonBossMessage(cooldown, now));
             return;
         }
 
@@ -345,7 +345,7 @@ class AdventureCommands extends BaseCommands {
             const cooldown = this.guild.getAdventureCooldown();
             const timer = differenceInMilliseconds(cooldown, now);
 
-            const cooldownMessage = await this.message.channel.send(makeCannotAdventureMessage(cooldown, now));
+            const cooldownMessage = await this.message.send(makeCannotAdventureMessage(cooldown, now));
 
             setTimeout(() => {
                 cooldownMessage.edit(makeCanAdventureMessage());
@@ -358,9 +358,9 @@ class AdventureCommands extends BaseCommands {
 
         const secondsToWait = 45;
 
-        await this.message.channel.send(makeSummonBossMessage(this.message.author.username, area));
+        await this.message.send(makeSummonBossMessage(this.message.author().username, area));
 
-        const message: Message = await this.message.channel.send(makeSummonBossConfirmationMessage(area, `${secondsToWait}s`));
+        const message: Message = await this.message.send(makeSummonBossConfirmationMessage(area, `${secondsToWait}s`));
 
         await this.countdownSeconds(secondsToWait,
             (timeRemaining: string) => {
@@ -420,7 +420,7 @@ class AdventureCommands extends BaseCommands {
         });
 
         if (denyList.length > 0 || approveList.length === 0) {
-            this.message.channel.send(makeErrorMessage(`You decided not to summon the area boss this time around. Probably a wise decision.`));
+            this.message.send(makeErrorMessage(`You decided not to summon the area boss this time around. Probably a wise decision.`));
             this.guild.unlock();
 
             return;
@@ -522,7 +522,7 @@ class AdventureCommands extends BaseCommands {
             won = true;
 
             const adventureResultsMessageWin = makeAdventureResults(won, enemy, totalDamage, allPlayerResults);
-            this.message.channel.send(adventureResultsMessageWin);
+            this.message.send(adventureResultsMessageWin);
 
             for (let i = 0; i < allPlayerResults.length; i++) {
                 const currentPlayer: IPlayer = allPlayerResults[i].player;
@@ -546,7 +546,7 @@ class AdventureCommands extends BaseCommands {
             }
 
             const adventureResultsMessageLose = makeAdventureResults(won, enemy, totalDamage, allPlayerResults);
-            this.message.channel.send(adventureResultsMessageLose);
+            this.message.send(adventureResultsMessageLose);
         }
         // END BOSS FIGHT
 

@@ -15,49 +15,49 @@ class AreaCommands extends BaseCommands {
         const area: IArea | null = this.guild.getCurrentArea();
 
         if (!area) {
-            this.message.channel.send(makeErrorMessage('Sorry, you are not currently in any area'));
+            this.message.send(makeErrorMessage('Sorry, you are not currently in any area'));
             return;
         }
 
-        this.message.channel.send(makeCurrentAreaMessage(area, this.guild));
+        this.message.send(makeCurrentAreaMessage(area, this.guild));
     }
 
     async travel(areaName?: string) {
         if (!areaName) {
-            this.message.channel.send(makeAreaHelpMessage(this.guild));
+            this.message.send(makeAreaHelpMessage(this.guild));
             return;
         }
 
         if (this.guild.isLocked) {
-            this.message.channel.send(makeLockedMessage());
+            this.message.send(makeLockedMessage());
             return;
         }
 
         const area: IArea | null = AreaService.findArea(areaName);
 
         if (!area || !this.guild.canTravelToArea(area)) {
-            this.message.channel.send(makeErrorMessage('Sorry, that area either does not exist or you have not unlocked it yet'));
+            this.message.send(makeErrorMessage('Sorry, that area either does not exist or you have not unlocked it yet'));
             return;
         }
 
         if (area.key === this.guild.get('currentArea')) {
-            this.message.channel.send(makeErrorMessage(`You are already in ${area.name}.`));
+            this.message.send(makeErrorMessage(`You are already in ${area.name}.`));
             return;
         }
 
         if (!this.guild.canAfford(area.travelCost)) {
-            this.message.channel.send(makeErrorMessage(`Your guild cannot afford to travel to this location.`));
+            this.message.send(makeErrorMessage(`Your guild cannot afford to travel to this location.`));
             return;
         }
 
         await this.guild.lock();
 
         const secondsToWait = 45;
-        const message: Message = await this.message.channel.send(makeChangeAreaConfirmationMessage(this.message.author.username, area, this.guild, `${secondsToWait}s`));
+        const message: Message = await this.message.send(makeChangeAreaConfirmationMessage(this.message.author().username, area, this.guild, `${secondsToWait}s`));
 
         await this.countdownSeconds(secondsToWait,
             (timeRemaining: string, color: string) => {
-                message.edit(makeChangeAreaConfirmationMessage(this.message.author.username, area, this.guild, timeRemaining));
+                message.edit(makeChangeAreaConfirmationMessage(this.message.author().username, area, this.guild, timeRemaining));
             },
             () => {
                 message.delete();
@@ -114,7 +114,7 @@ class AreaCommands extends BaseCommands {
 
         if (denyList.length > 0 || approveList.length === 0) {
             this.guild.unlock();
-            this.message.channel.send(makeErrorMessage(`You decided not to travel to ${area.name}.`));
+            this.message.send(makeErrorMessage(`You decided not to travel to ${area.name}.`));
 
             return;
         }
@@ -126,10 +126,10 @@ class AreaCommands extends BaseCommands {
             const currentArea = this.guild.getCurrentArea();
             const questItems = this.guild.getQuestItemsForCurrentArea();
 
-            this.message.channel.send(makeAreaChangedMessage(currentArea, this.guild));
+            this.message.send(makeAreaChangedMessage(currentArea, this.guild));
 
             if (this.guild.hasEnoughQuestItemsForBossInCurrentArea()) {
-                this.message.channel.send(makeSuccessMessage(`You have collected enough (${questItems}/${currentArea.totalQuestItemsNeeded}) ${currentArea.questItem} quest items. You may summon the area boss by using \`-boss\`.`));
+                this.message.send(makeSuccessMessage(`You have collected enough (${questItems}/${currentArea.totalQuestItemsNeeded}) ${currentArea.questItem} quest items. You may summon the area boss by using \`-boss\`.`));
             }
 
             await this.guild.unlock();
@@ -137,7 +137,7 @@ class AreaCommands extends BaseCommands {
             console.error(error);
 
             this.guild.unlock();
-            this.message.channel.send(makeErrorMessage('Sorry, we were unable to travel to that location'));
+            this.message.send(makeErrorMessage('Sorry, we were unable to travel to that location'));
         }
     }
 }

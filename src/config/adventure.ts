@@ -3,7 +3,14 @@ interface Config {
     bossCooldownInSeconds: number,
     adminPassword: string,
     prefix: string,
-    discordKey: string,
+    discord: {
+        key: string,
+    },
+    mongodb: {
+        url: string,
+        useCreateIndex: boolean,
+        autoIndex: boolean,
+    },
 };
 
 export default <Config>{
@@ -11,5 +18,12 @@ export default <Config>{
     bossCooldownInSeconds: process.env.BOSS_COOLDOWN_IN_SECONDS || 3600, // 1 hour
     adminPassword: process.env.ADMIN_PASSWORD,
     prefix: process.env.PREFIX || '-',
-    discordKey: process.env.DISCORD_KEY,
+    discord: {
+        key: process.env.DISCORD_KEY,
+    },
+    mongodb: {
+        url: process.env.MONGODB_URL || 'mongodb://127.0.0.1:27017/inventure',
+        useCreateIndex: process.env.MONGODB_CREATE_INDEX || true,
+        autoIndex: process.env.MONGODB_AUTO_INDEX || true,
+    },
 };
