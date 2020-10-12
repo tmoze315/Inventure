@@ -1,9 +1,9 @@
-import { Message } from "../discord/message";
+import { IMessage } from "../discord/message";
 import { IGuild } from "../models/Guild";
 import { IPlayer } from '../models/Player';
 
 export default abstract class BaseCommands {
-    constructor(protected message: Message, protected guild: IGuild, protected player: IPlayer) { }
+    constructor(protected message: IMessage, protected guild: IGuild, protected player: IPlayer) { }
 
     countdownSeconds(seconds: number, updateCallback: CallableFunction, endCallback: CallableFunction) {
         const tick = () => {

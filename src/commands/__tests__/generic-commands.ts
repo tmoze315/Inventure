@@ -1,55 +1,43 @@
-import { Message } from 'discord.js';
-import { Client } from 'discord.js';
-import { MockGuild, MockMessage, MockTextChannel, MockUser } from "jest-discordjs-mocks";
-import Application from '../../application';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import AdventureConfig from '../../config/adventure';
-import { connect, disconnect } from 'mongoose';
+import { runApplication, createMessage } from '../../discord/__helpers__/jest.helpers';
+import { Player } from '../../models/Player';
 
-describe('auth', () => {
-    it('should resolve with true and valid userId for hardcoded token', async (done) => {
-        const mongoServer = new MongoMemoryServer();
-        const url = await mongoServer.getUri();
+describe('generic-commands', () => {
+    describe('-stats', () => {
+        test('Cannot view stats before starting adventure', async () => {
+            const message = createMessage('-stats');
+            await runApplication(message);
 
-        await connect(url, {
-            useNewUrlParser: true,
-            useFindAndModify: false,
-            useUnifiedTopology: true,
-            useCreateIndex: AdventureConfig.mongodb.useCreateIndex,
-            autoIndex: AdventureConfig.mongodb.autoIndex,
+            expect(message.send).toBeCalledWith('Oops, it looks like you haven\'t started your journey yet. Create your character with `-start`');
+        });
+    });
+
+    describe('-start', () => {
+        test('Can start an adventure', async () => {
+            const message = createMessage('-start');
+            await runApplication(message);
+
+            expect(message.send).toBeCalledWith(
+                expect.objectContaining({
+                    description: expect.stringContaining('Welcome to Inventure, testing-user'),
+                })
+            );
         });
 
-        const application = new Application;
+        test('Cannot start an adventure again', async () => {
+            const player = new Player({
+                id: 123,
+                username: 'testing-player',
+            });
 
-        // client.on('ready', () => {
-        //     console.log('HERE');
+            await player.save();
 
-        //     expect(true).toBe(true);
-        //     done();
-        // });
-        // const guild = new MockGuild();
-        // const message = new MockMessage;
-        // const user = new MockUser(null, {
-        //     id: 1,
-        // });
+            const message = createMessage('-start');
 
-        // message.content = '-stats';
-        // message.channel = new MockTextChannel(guild, {});
-        // message.author = user;
+            message._player = player;
 
-        // jest.spyOn(message.channel, 'send').mockImplementation((): Promise<Message[]> => {
-        //     return Promise.resolve().then(() => {
-        //         return [message];
-        //     });
-        // });
+            await runApplication(message);
 
-        // await application.handleMessage(message);
-
-        // expect(message.channel.send).toBeCalledWith('Oops, it looks like you haven\'t started your journey yet. Create your character with `-start`');
-
-        await disconnect();
-        await mongoServer.stop();
-
-        done();
-    })
+            expect(message.send).toBeCalledWith('Looks like you have already started your adventure!');
+        });
+    });
 });

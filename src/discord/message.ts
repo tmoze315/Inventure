@@ -2,7 +2,16 @@ import { Message as DiscordMessage, User as DiscordUser } from 'discord.js';
 import { IPlayer, Player } from '../models/Player';
 import { User } from './user';
 
-class Message {
+interface IMessage {
+    content(): string;
+    author(): User;
+    player(): Promise<IPlayer | null>;
+    guildId(): string | null;
+    isFromBot(): boolean;
+    send(data: any): Promise<any>;
+}
+
+class Message implements IMessage {
     private currentPlayer: IPlayer | null = null;
 
     constructor(private discordMessage: DiscordMessage) { }
@@ -36,9 +45,9 @@ class Message {
         return this.discordMessage.author.bot;
     }
 
-    send(data: any) {
+    send(data: any): Promise<any> {
         return this.discordMessage.channel.send(data);
     }
 }
 
-export { Message }
+export { Message, IMessage }

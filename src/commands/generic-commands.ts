@@ -31,7 +31,7 @@ class GenericCommands extends BaseCommands {
             username: author.username,
         });
 
-        newPlayer.save();
+        await newPlayer.save();
 
         return this.message.send(makeStartMessage(newPlayer.get('username')));
     }

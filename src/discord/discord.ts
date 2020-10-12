@@ -5,7 +5,7 @@ import AdventureConfig from '../config/adventure';
 class Discord {
     private client: Client | null = null;
 
-    login(messageCallback: CallableFunction): Promise<boolean> {
+    login(messageCallback: CallableFunction): Promise<any> {
         return new Promise((resolve) => {
             this.client = new Client();
 

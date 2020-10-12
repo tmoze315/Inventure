@@ -2,10 +2,10 @@ import AdventureConfig from './config/adventure';
 import availableCommands from './config/available-commands';
 import { Guild as GuildModel } from './models/Guild';
 import { IPlayer } from './models/Player';
-import { Message } from './discord/message';
+import { IMessage } from './discord/message';
 
 class Application {
-    async handleMessage(message: Message) {
+    async handleMessage(message: IMessage) {
         const prefix = AdventureConfig.prefix;
 
         if (!message.content().startsWith(prefix) || message.isFromBot()) {
@@ -13,12 +13,11 @@ class Application {
         }
 
         let guildId: string | null = message.guildId();
+        let existingGuild = null;
 
-        if (!guildId) {
-            return;
+        if (guildId) {
+            existingGuild = await GuildModel.findOne({ id: guildId }).exec();
         }
-
-        let existingGuild = await GuildModel.findOne({ id: guildId }).exec();
 
         if (!existingGuild) {
             const newGuild = new GuildModel({
