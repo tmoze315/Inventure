@@ -1,15 +1,9 @@
 import { runApplication, createMessage } from '../../discord/__helpers__/jest.helpers';
 import { Player } from '../../models/Player';
 
-describe('generic-commands', () => {
-    describe('-stats', () => {
-        test('Cannot view stats before starting adventure', async () => {
-            const message = createMessage('-stats');
-            await runApplication(message);
-
-            expect(message.send).toBeCalledWith('Oops, it looks like you haven\'t started your journey yet. Create your character with `-start`');
-        });
-    });
+describe('Generic Commands', () => {
+    // describe('-stats', () => {
+    // });
 
     describe('-start', () => {
         test('Can start an adventure', async () => {

@@ -22,7 +22,7 @@
         "watch2": "npm run tsc && npx nodemon ./dist/index.js",
         "tsc": "tsc",
         "test:coverage": "ENV_FILE=./.env.test jest --maxWorkers=4 --verbose --coverage",
-        "test": "ENV_FILE=./.env.test jest src/"
+        "test": "ENV_FILE=./.env.test jest --verbose --maxWorkers=4"
     },
     "author": "",
     "license": "ISC",
