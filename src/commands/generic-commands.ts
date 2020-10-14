@@ -9,13 +9,10 @@ import { Player, IPlayer } from '../models/Player';
 import BaseCommands from "./base-commands";
 import { makeShowHeroclassesMessage } from "../messages/show-heroclasses";
 import { makeSuccessMessage } from "../messages/success";
-import { InvalidArgument } from "../exceptions/exceptions";
-import { JsxEmit } from "typescript";
 
 class GenericCommands extends BaseCommands {
     async start() {
         const player: IPlayer | null = await Player.findOne({ id: this.message.author().id }).exec();
-        const players: any = await Player.find({}).exec();
 
         if (player) {
             this.message.send('Looks like you have already started your adventure!');
@@ -37,6 +34,10 @@ class GenericCommands extends BaseCommands {
     }
 
     async rebirth() {
+        if (this.guild.isLocked) {
+            return this.message.send(makeErrorMessage(`You cannot rebirth right now. Your attention is needed elsewhere.`));
+        }
+
         const player: IPlayer = await this.message.player();
 
         try {
@@ -66,13 +67,17 @@ class GenericCommands extends BaseCommands {
     }
 
     async skillpoints(skill: string, amount: number = 1) {
+        if (this.guild.isLocked) {
+            return this.message.send(makeErrorMessage(`You cannot use your skillpoints right now. Your attention is needed elsewhere.`));
+        }
+
         const player: IPlayer = await this.message.player();
 
         if (!skill) {
             return this.message.send(makeErrorMessage(`You must include the desired skill using -skill [skill name]!`));
         }
 
-        if (amount <= 0) {
+        if (amount <= 0 || isNaN(amount) || amount % 1 !== 0) {
             return this.message.send(makeErrorMessage(`${player.username}, you must provide a valid skillpoint amount.`));
         }
 
@@ -92,9 +97,8 @@ class GenericCommands extends BaseCommands {
         ];
 
         const availableSkill = availableSkills.find((item) => {
-            return item.acceptedValues.includes(skill);
+            return item.acceptedValues.includes(skill.toLowerCase());
         });
-
         if (!availableSkill) {
             return this.message.send(makeErrorMessage(`${player.username}, that skill cannot be found.`));
         }
@@ -104,10 +108,6 @@ class GenericCommands extends BaseCommands {
 
             return this.message.send(makeSuccessMessage(`${player.username}, you have increased your ${availableSkill.key} by ${amount}.`));
         } catch (error) {
-            if (error instanceof InvalidArgument) {
-                return this.message.send(makeErrorMessage(`${player.username}, that skill cannot be found.`));
-            }
-
             return this.message.send(makeErrorMessage(`${player.username}, you don't have enough skillpoints.`));
         }
     }
@@ -115,8 +115,7 @@ class GenericCommands extends BaseCommands {
     // Lets players select their Heroclass
     async selectHeroclass(heroclass?: string) {
         if (this.guild.isLocked) {
-            this.message.send(makeErrorMessage(`You cannot do that right now.`));
-            return;
+            return this.message.send(makeErrorMessage(`You cannot do that right now.`));
         }
 
         const player: IPlayer | null = await Player.findOne({ id: this.message.author().id }).exec();

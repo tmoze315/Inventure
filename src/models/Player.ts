@@ -3,7 +3,6 @@ import { IEnemy } from '../interfaces/enemy';
 import { ItemSchema } from './Item';
 import { PlayerAttack } from '../commands/adventure-commands';
 import { IArea } from '../areas/base-area';
-import { InvalidArgument } from '../exceptions/exceptions';
 
 interface IPlayer extends Document {
     id: string,
@@ -51,6 +50,8 @@ interface IPlayer extends Document {
     useSkillpoints: Function,
 }
 
+type Skillpoint = 'attack' | 'intelligence' | 'charisma';
+
 interface RewardResult {
     player: IPlayer,
     xpRoll: number,
@@ -68,13 +69,6 @@ interface EarnedSkillpoints {
     level: number,
     totalSkillpoints: number,
     levelUp: boolean,
-}
-
-interface SkillpointResults {
-    player: IPlayer,
-    finalPoints: number,
-    skill: string,
-    worked: boolean,
 }
 
 const PlayerSchema = new Schema({
@@ -626,9 +620,7 @@ PlayerSchema.methods.postBattleRewards = function (player: IPlayer, enemy: IEnem
     };
 };
 
-PlayerSchema.methods.useSkillpoints = function (skill: string, amount: number = 1) {
-    skill = skill.toLowerCase();
-
+PlayerSchema.methods.useSkillpoints = function (skill: Skillpoint, amount: number = 1) {
     if (typeof amount === 'string') {
         amount = parseInt(amount);
     }
@@ -636,14 +628,10 @@ PlayerSchema.methods.useSkillpoints = function (skill: string, amount: number = 
     const currentPoints = this.get(`skillpoints.unspent`);
 
     if (currentPoints < amount) {
-        throw new Error('You do not have enough skill points');
+        throw new Error('You do not have enough skill points.');
     }
 
     const skills: Array<string> = ['attack', 'charisma', 'intelligence'];
-
-    if (!skills.includes(skill)) {
-        throw new InvalidArgument('That skill cannot be found');
-    }
 
     const currentPointsInSkill = parseInt(this.get(`skillpoints.${skill}`));
 
@@ -655,4 +643,4 @@ PlayerSchema.methods.useSkillpoints = function (skill: string, amount: number = 
 
 const Player = model<IPlayer>('Player', PlayerSchema);
 
-export { Player, PlayerSchema, IPlayer, RewardResult, EarnedSkillpoints, SkillpointResults };
+export { Player, PlayerSchema, IPlayer, RewardResult, EarnedSkillpoints };

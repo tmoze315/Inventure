@@ -1,5 +1,6 @@
 import { factory, MessageFactory } from '../../discord/__helpers__/jest.factories';
 import { runApplication } from '../../discord/__helpers__/jest.helpers';
+import { Guild } from '../../models/Guild';
 import { Player } from '../../models/Player';
 
 describe('Generic', () => {
@@ -19,7 +20,7 @@ describe('Generic', () => {
             const player = await factory(Player).create();
 
             const message = new MessageFactory('-start')
-                .withPlayer(player)
+                .fromPlayer(player)
                 .make();
 
             await runApplication(message);
@@ -37,7 +38,7 @@ describe('Generic', () => {
             });
 
             const message = new MessageFactory('-rebirth')
-                .withPlayer(player)
+                .fromPlayer(player)
                 .make();
 
             await runApplication(message);
@@ -51,6 +52,31 @@ describe('Generic', () => {
             expect(player.rebirths).toBe(9);
         });
 
+        test('Cannot rebirth when adventuring', async () => {
+            const player = await factory(Player).create({
+                level: 100,
+                maxLevel: 100,
+                rebirths: 9,
+            });
+
+            const guild = await factory(Guild).create({ isLocked: true });
+
+            const message = new MessageFactory('-rebirth')
+                .fromGuild(guild)
+                .fromPlayer(player)
+                .make();
+
+            await runApplication(message);
+
+            expect(message.send).toBeCalledWith(expect.objectContaining({
+                description: expect.stringContaining('You cannot rebirth right now. Your attention is needed elsewhere.'),
+            }));
+
+            expect(player.level).toBe(100);
+            expect(player.maxLevel).toBe(100);
+            expect(player.rebirths).toBe(9);
+        });
+
         test('Can rebirth if you are at max level', async () => {
             const player = await factory(Player).create({
                 level: 100,
@@ -59,7 +85,7 @@ describe('Generic', () => {
             });
 
             const message = new MessageFactory('-rebirth')
-                .withPlayer(player)
+                .fromPlayer(player)
                 .make();
 
             await runApplication(message);
@@ -99,7 +125,7 @@ describe('Generic', () => {
             });
 
             const message = new MessageFactory('-skill')
-                .withPlayer(player)
+                .fromPlayer(player)
                 .make();
 
             await runApplication(message);
@@ -112,6 +138,31 @@ describe('Generic', () => {
             }));
         });
 
+        test('Cannot use skillpoints when adventuring', async () => {
+            const player = await factory(Player).create({
+                skillpoints: {
+                    attack: 1,
+                    unspent: 1,
+                },
+            });
+
+            const guild = await factory(Guild).create({ isLocked: true });
+
+            const message = new MessageFactory('-skill attack')
+                .fromGuild(guild)
+                .fromPlayer(player)
+                .make();
+
+            await runApplication(message);
+
+            expect(player.get('skillpoints.attack')).toBe(1);
+            expect(player.get('skillpoints.unspent')).toBe(1);
+
+            expect(message.send).toBeCalledWith(expect.objectContaining({
+                description: expect.stringContaining('You cannot use your skillpoints right now. Your attention is needed elsewhere.'),
+            }));
+        });
+
         test('Cannot use skillpoint on an unsupported attribute', async () => {
             const player = await factory(Player).create({
                 skillpoints: {
@@ -121,7 +172,7 @@ describe('Generic', () => {
             });
 
             const message = new MessageFactory('-skill nope')
-                .withPlayer(player)
+                .fromPlayer(player)
                 .make();
 
             await runApplication(message);
@@ -143,7 +194,7 @@ describe('Generic', () => {
             });
 
             const message = new MessageFactory('-skill attack')
-                .withPlayer(player)
+                .fromPlayer(player)
                 .make();
 
             await runApplication(message);
@@ -165,7 +216,7 @@ describe('Generic', () => {
             });
 
             const message = new MessageFactory('-skill attack 3')
-                .withPlayer(player)
+                .fromPlayer(player)
                 .make();
 
             await runApplication(message);
@@ -187,7 +238,29 @@ describe('Generic', () => {
             });
 
             const message = new MessageFactory('-skill attack -2')
-                .withPlayer(player)
+                .fromPlayer(player)
+                .make();
+
+            await runApplication(message);
+
+            expect(player.get('skillpoints.attack')).toBe(1);
+            expect(player.get('skillpoints.unspent')).toBe(2);
+
+            expect(message.send).toBeCalledWith(expect.objectContaining({
+                description: expect.stringContaining('testing-player, you must provide a valid skillpoint amount.'),
+            }));
+        });
+
+        test('Must use an integer for the skillpoint amount', async () => {
+            const player = await factory(Player).create({
+                skillpoints: {
+                    attack: 1,
+                    unspent: 2,
+                },
+            });
+
+            const message = new MessageFactory('-skill attack 0.5')
+                .fromPlayer(player)
                 .make();
 
             await runApplication(message);
@@ -209,7 +282,29 @@ describe('Generic', () => {
             });
 
             const message = new MessageFactory('-skill attack 0')
-                .withPlayer(player)
+                .fromPlayer(player)
+                .make();
+
+            await runApplication(message);
+
+            expect(player.get('skillpoints.attack')).toBe(1);
+            expect(player.get('skillpoints.unspent')).toBe(2);
+
+            expect(message.send).toBeCalledWith(expect.objectContaining({
+                description: expect.stringContaining('testing-player, you must provide a valid skillpoint amount.'),
+            }));
+        });
+
+        test('Cannot use words for the skillpoint amount', async () => {
+            const player = await factory(Player).create({
+                skillpoints: {
+                    attack: 1,
+                    unspent: 2,
+                },
+            });
+
+            const message = new MessageFactory('-skill attack nope')
+                .fromPlayer(player)
                 .make();
 
             await runApplication(message);
@@ -237,7 +332,7 @@ describe('Generic', () => {
             });
 
             const message = new MessageFactory(`-skill ${skill}`)
-                .withPlayer(player)
+                .fromPlayer(player)
                 .make();
 
             await runApplication(message);
@@ -265,7 +360,7 @@ describe('Generic', () => {
             });
 
             const message = new MessageFactory(`-skill ${skill} 10`)
-                .withPlayer(player)
+                .fromPlayer(player)
                 .make();
 
             await runApplication(message);
@@ -280,10 +375,13 @@ describe('Generic', () => {
 
         test.each([
             ['att', 'attack'],
+            ['Attack', 'attack'],
             ['int', 'intelligence'],
             ['intel', 'intelligence'],
+            ['Intelligence', 'intelligence'],
             ['cha', 'charisma'],
             ['char', 'charisma'],
+            ['Charisma', 'charisma'],
         ])('Can use shortened skillpoint name (%s)', async (shortSkillName, skill) => {
             const player = await factory(Player).create({
                 skillpoints: {
@@ -295,7 +393,7 @@ describe('Generic', () => {
             });
 
             const message = new MessageFactory(`-skill ${shortSkillName}`)
-                .withPlayer(player)
+                .fromPlayer(player)
                 .make();
 
             await runApplication(message);

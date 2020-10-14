@@ -78,7 +78,7 @@ describe('Application', () => {
         const player = await factory(Player).create();
 
         const message = new MessageFactory('-abcdefg')
-            .withPlayer(player)
+            .fromPlayer(player)
             .make();
 
         await runApplication(message);
@@ -90,7 +90,7 @@ describe('Application', () => {
         const player = await factory(Player).create({ isBanned: true });
 
         const message = new MessageFactory('-start')
-            .withPlayer(player)
+            .fromPlayer(player)
             .make();
 
         await runApplication(message);
