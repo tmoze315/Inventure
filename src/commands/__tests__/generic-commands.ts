@@ -1,13 +1,11 @@
-import { runApplication, createMessage } from '../../discord/__helpers__/jest.helpers';
+import { factory, MessageFactory } from '../../discord/__helpers__/jest.factories';
+import { runApplication } from '../../discord/__helpers__/jest.helpers';
 import { Player } from '../../models/Player';
 
-describe('Generic Commands', () => {
-    // describe('-stats', () => {
-    // });
-
+describe('Generic', () => {
     describe('-start', () => {
         test('Can start an adventure', async () => {
-            const message = createMessage('-start');
+            const message = new MessageFactory('-start').make();
             await runApplication(message);
 
             expect(message.send).toBeCalledWith(
@@ -18,20 +16,29 @@ describe('Generic Commands', () => {
         });
 
         test('Cannot start an adventure again', async () => {
-            const player = new Player({
-                id: 123,
-                username: 'testing-player',
-            });
+            const player = factory(Player).make();
 
-            await player.save();
-
-            const message = createMessage('-start');
-
-            message._player = player;
+            const message = new MessageFactory('-start')
+                .withPlayer(player)
+                .make();
 
             await runApplication(message);
 
             expect(message.send).toBeCalledWith('Looks like you have already started your adventure!');
+        });
+    });
+
+    describe('-rebirth', () => {
+        test('Can start an adventure', async () => {
+            const message = new MessageFactory('-start').make();
+
+            await runApplication(message);
+
+            expect(message.send).toBeCalledWith(
+                expect.objectContaining({
+                    description: expect.stringContaining('Welcome to Inventure, testing-user'),
+                })
+            );
         });
     });
 });

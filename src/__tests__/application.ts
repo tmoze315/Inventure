@@ -1,17 +1,18 @@
-import { runApplication, createMessage } from '../discord/__helpers__/jest.helpers';
+import { factory, MessageFactory } from '../discord/__helpers__/jest.factories';
+import { runApplication } from '../discord/__helpers__/jest.helpers';
 import { Guild } from '../models/Guild';
 import { Player } from '../models/Player';
 
 describe('Application', () => {
     test('Cannot use bot before starting adventure', async () => {
-        const message = createMessage('-stats');
+        const message = new MessageFactory('-start').make();
         await runApplication(message);
 
         expect(message.send).toBeCalledWith('Oops, it looks like you haven\'t started your journey yet. Create your character with `-start`');
     });
 
     test('Guild is created if one does not exist', async () => {
-        const message = createMessage('-stats');
+        const message = new MessageFactory('-start').make();
 
         let guilds = await Guild.find().exec();
         expect(guilds.length).toBe(0);
@@ -23,7 +24,7 @@ describe('Application', () => {
     });
 
     test('Guild is not created if one does already exists', async () => {
-        const message = createMessage('-stats');
+        const message = new MessageFactory('-start').make();
 
         const guild = new Guild({ id: '123' });
         await guild.save();
@@ -39,9 +40,9 @@ describe('Application', () => {
     });
 
     test('Ignores messages from bots', async () => {
-        const message = createMessage('-stats');
-
-        message._isFromBot = true;
+        const message = new MessageFactory('-start')
+            .isFromBot()
+            .make();
 
         await runApplication(message);
 
@@ -52,7 +53,7 @@ describe('Application', () => {
     });
 
     test('Ignores messages without prefix', async () => {
-        const message = createMessage('stats');
+        const message = new MessageFactory('start').make();
 
         await runApplication(message);
 
@@ -63,7 +64,7 @@ describe('Application', () => {
     });
 
     test('Ignores empty commands', async () => {
-        const message = createMessage('-');
+        const message = new MessageFactory('-').make();
 
         await runApplication(message);
 
@@ -74,7 +75,7 @@ describe('Application', () => {
     });
 
     test('Ignores unsupported commands', async () => {
-        const message = createMessage('-abcdefg');
+        const message = new MessageFactory('-abcdefg').make();
 
         const player = new Player({
             id: 123,
@@ -91,17 +92,11 @@ describe('Application', () => {
     });
 
     test('Prevent banned users from running commands', async () => {
-        const message = createMessage('-stats');
+        const player = factory(Player).make({ isBannned: true });
 
-        const player = new Player({
-            id: 123,
-            username: 'testing-player',
-            isBanned: true,
-        });
-
-        await player.save();
-
-        message._player = player;
+        const message = new MessageFactory('-start')
+            .withPlayer(player)
+            .make();
 
         await runApplication(message);
 
