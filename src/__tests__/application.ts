@@ -98,4 +98,15 @@ describe('Application', () => {
         expect(message.send.mock.calls.length).toBe(1);
         expect(message.send).toBeCalledWith('Oops, it looks like you\'re banned. If you believe this is a mistake, please speak with an administrator.');
     });
+
+    test('whitespace is trimmed on the right of commands', async () => {
+        const message = new MessageFactory('-start ').make();
+        await runApplication(message);
+
+        expect(message.send).toBeCalledWith(
+            expect.objectContaining({
+                description: expect.stringContaining('Welcome to Inventure, testing-user'),
+            })
+        );
+    });
 });

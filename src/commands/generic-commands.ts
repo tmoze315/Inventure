@@ -8,9 +8,9 @@ import { makeStatsMessage } from "../messages/stats";
 import { Player, IPlayer } from '../models/Player';
 import BaseCommands from "./base-commands";
 import { makeShowHeroclassesMessage } from "../messages/show-heroclasses";
-import { makeInsufficientSkillpointsMessage } from "../messages/insufficient-skillpoints";
-import { makeUsedSkillpointsMessage } from "../messages/used-skillpoints";
 import { makeSuccessMessage } from "../messages/success";
+import { InvalidArgument } from "../exceptions/exceptions";
+import { JsxEmit } from "typescript";
 
 class GenericCommands extends BaseCommands {
     async start() {
@@ -65,31 +65,51 @@ class GenericCommands extends BaseCommands {
         return this.message.send(makeStatsMessage(player));
     }
 
-    async skillpoints(skill: string, amount?: number) {
-        const player: IPlayer | null = await this.message.player();
-
-        if (!player) {
-            this.message.send('Player not found. Please try again');
-            return;
-        }
+    async skillpoints(skill: string, amount: number = 1) {
+        const player: IPlayer = await this.message.player();
 
         if (!skill) {
-            this.message.send(makeErrorMessage(`You must include the desired skill using -skill [skill name]!`));
-            return;
+            return this.message.send(makeErrorMessage(`You must include the desired skill using -skill [skill name]!`));
         }
 
-        const useSkill = await player.useSkillpoints(skill, amount, player);
-
-        if (!useSkill.worked) {
-            const skillpointsNotUsedMessage = makeInsufficientSkillpointsMessage(player.username);
-            this.message.send(skillpointsNotUsedMessage);
+        if (amount <= 0) {
+            return this.message.send(makeErrorMessage(`${player.username}, you must provide a valid skillpoint amount.`));
         }
 
-        if (useSkill.worked) {
-            const skillpointsUsedMessage = makeUsedSkillpointsMessage(useSkill);
-            this.message.send(skillpointsUsedMessage);
+        const availableSkills = [
+            {
+                key: 'attack',
+                acceptedValues: ['attack', 'att'],
+            },
+            {
+                key: 'charisma',
+                acceptedValues: ['charisma', 'cha', 'char'],
+            },
+            {
+                key: 'intelligence',
+                acceptedValues: ['intelligence', 'int', 'intel'],
+            },
+        ];
+
+        const availableSkill = availableSkills.find((item) => {
+            return item.acceptedValues.includes(skill);
+        });
+
+        if (!availableSkill) {
+            return this.message.send(makeErrorMessage(`${player.username}, that skill cannot be found.`));
         }
 
+        try {
+            await player.useSkillpoints(availableSkill.key, amount, player);
+
+            return this.message.send(makeSuccessMessage(`${player.username}, you have increased your ${availableSkill.key} by ${amount}.`));
+        } catch (error) {
+            if (error instanceof InvalidArgument) {
+                return this.message.send(makeErrorMessage(`${player.username}, that skill cannot be found.`));
+            }
+
+            return this.message.send(makeErrorMessage(`${player.username}, you don't have enough skillpoints.`));
+        }
     }
 
     // Lets players select their Heroclass

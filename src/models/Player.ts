@@ -3,7 +3,7 @@ import { IEnemy } from '../interfaces/enemy';
 import { ItemSchema } from './Item';
 import { PlayerAttack } from '../commands/adventure-commands';
 import { IArea } from '../areas/base-area';
-import { makeEarnedSkillpoints } from '../messages/earned-skillpoints-and-levelup';
+import { InvalidArgument } from '../exceptions/exceptions';
 
 interface IPlayer extends Document {
     id: string,
@@ -377,6 +377,7 @@ PlayerSchema.methods.giveExperience = async function (experience: number) {
 
 PlayerSchema.methods.setLevel = function (level: number) {
     this.level = level;
+    this.experience = this.getExperienceNeededForLevel(this.level);
 
     return this.save();
 };
@@ -505,8 +506,6 @@ PlayerSchema.methods.handleLevelUp = async function () {
 
     this.level = newLevel;
 
-    //    const save = this.save();
-
     return newLevel;
 };
 
@@ -555,13 +554,24 @@ PlayerSchema.methods.rebirth = async function () {
     this.set('skillpoints.attack', 0);
     this.set('skillpoints.charisma', 0);
     this.set('skillpoints.intelligence', 0);
-    this.set('skillpoints.unspent', 0);
+
+    this.set('stats.attack', 1);
+    this.set('stats.charisma', 1);
+    this.set('stats.intelligence', 1);
+    this.set('stats.luck', 1);
+    this.set('stats.dexterity', 1);
+    this.set('stats.unspent', 1);
 
     this.experience = 1;
     this.level = 1;
 
     this.rebirths += 1
     this.maxLevel += 10;
+
+    // Give the user more skillpoints to assign each rebirth
+    const skillpoints = Math.ceil(Math.pow(this.rebirths, 1.8));
+
+    this.set('skillpoints.unspent', skillpoints);
 
     return this.save();
 };
@@ -616,58 +626,31 @@ PlayerSchema.methods.postBattleRewards = function (player: IPlayer, enemy: IEnem
     };
 };
 
-PlayerSchema.methods.useSkillpoints = async function (desiredSkill: string, amount?: number) {
+PlayerSchema.methods.useSkillpoints = function (skill: string, amount: number = 1) {
+    skill = skill.toLowerCase();
 
-    let realAmount = 0;
-    let skill = desiredSkill.toLowerCase();
-    let worked = false;
-
-    const options: Array<String> = ['attack', 'charisma', 'intelligence', 'att', 'cha', 'int'];
-
-    if (!options.includes(skill)) {
-        worked = false;
-        return;
+    if (typeof amount === 'string') {
+        amount = parseInt(amount);
     }
-
-    if (skill == 'att') {
-        skill = 'attack';
-    }
-    if (skill == 'cha') {
-        skill = 'charisma';
-    }
-    if (skill == 'int') {
-        skill = 'intelligence';
-    }
-
-    if (!amount) {
-        realAmount = 1;
-    }
-    if (amount) {
-        realAmount = amount;
-    }
-
 
     const currentPoints = this.get(`skillpoints.unspent`);
 
-    if (currentPoints >= realAmount) {
-        const currentPointsInSkill = this.get(`skillpoints.${skill}`);
-        const newPointsInSkill = this.set(`skillpoints.${skill}`, (Number(currentPointsInSkill) + Number(realAmount)));
-        const removeUnspent = this.set(`skillpoints.unspent`, (Number(currentPoints) - Number(realAmount)));
-        worked = true;
+    if (currentPoints < amount) {
+        throw new Error('You do not have enough skill points');
+    }
 
-    }
-    else {
-        worked = false;
-    }
-    const finalPointsInSkill = await this.get(`skillpoints.${skill}`);
-    const save = await this.save();
+    const skills: Array<string> = ['attack', 'charisma', 'intelligence'];
 
-    return <SkillpointResults>{
-        player: this,
-        finalPoints: finalPointsInSkill,
-        skill,
-        worked,
+    if (!skills.includes(skill)) {
+        throw new InvalidArgument('That skill cannot be found');
     }
+
+    const currentPointsInSkill = parseInt(this.get(`skillpoints.${skill}`));
+
+    this.set(`skillpoints.${skill}`, currentPointsInSkill + amount);
+    this.set(`skillpoints.unspent`, currentPoints - amount);
+
+    return this.save();
 };
 
 const Player = model<IPlayer>('Player', PlayerSchema);
