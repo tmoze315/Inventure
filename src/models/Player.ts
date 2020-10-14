@@ -538,7 +538,6 @@ PlayerSchema.methods.handleSkillpointRewards = async function (startLevel: numbe
     }
     const save = this.save();
 
-    console.log(allPassedLevels);
     return <EarnedSkillpoints>{
         player: this,
         level: endLevel,

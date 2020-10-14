@@ -5,7 +5,7 @@ import { Player } from '../models/Player';
 
 describe('Application', () => {
     test('Cannot use bot before starting adventure', async () => {
-        const message = new MessageFactory('-start').make();
+        const message = new MessageFactory('-stats').make();
         await runApplication(message);
 
         expect(message.send).toBeCalledWith('Oops, it looks like you haven\'t started your journey yet. Create your character with `-start`');
@@ -75,16 +75,11 @@ describe('Application', () => {
     });
 
     test('Ignores unsupported commands', async () => {
-        const message = new MessageFactory('-abcdefg').make();
+        const player = await factory(Player).create();
 
-        const player = new Player({
-            id: 123,
-            username: 'testing-player',
-        });
-
-        await player.save();
-
-        message._player = player;
+        const message = new MessageFactory('-abcdefg')
+            .withPlayer(player)
+            .make();
 
         await runApplication(message);
 
@@ -92,7 +87,7 @@ describe('Application', () => {
     });
 
     test('Prevent banned users from running commands', async () => {
-        const player = factory(Player).make({ isBannned: true });
+        const player = await factory(Player).create({ isBanned: true });
 
         const message = new MessageFactory('-start')
             .withPlayer(player)

@@ -75,10 +75,10 @@ class Factory {
         return item;
     }
 
-    create(data: Object = {}) {
+    async create(data: Object = {}) {
         const item = this.make(data);
 
-        item.save();
+        await item.save();
 
         return item;
     }
@@ -97,6 +97,7 @@ class PlayerFactory extends Factory {
         };
 
         const newData = { ...defaultData, ...data };
+
 
         return super.make(newData);
     }

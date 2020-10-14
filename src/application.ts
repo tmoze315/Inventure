@@ -1,7 +1,7 @@
 import AdventureConfig from './config/adventure';
 import availableCommands from './config/available-commands';
 import { Guild } from './models/Guild';
-import { IPlayer } from './models/Player';
+import { IPlayer, Player } from './models/Player';
 import { IMessage } from './discord/message';
 
 class Application {
@@ -35,7 +35,7 @@ class Application {
             existingGuild = await newGuild.save();
         }
 
-        const player: IPlayer | null = await message.player();
+        const player: IPlayer | null = await Player.findOne({ id: message.author().id }).exec();
 
         if ('start' !== command && !player) {
             return message.send(`Oops, it looks like you haven't started your journey yet. Create your character with \`${prefix}start\``);

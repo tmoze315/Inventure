@@ -21,8 +21,9 @@
         "watch": "npm run tsc && npx tsc-watch --onSuccess \"node ./dist/index.js\"",
         "watch2": "npm run tsc && npx nodemon ./dist/index.js",
         "tsc": "tsc",
+        "test": "ENV_FILE=./.env.test jest --verbose --maxWorkers=4",
         "test:coverage": "ENV_FILE=./.env.test jest --maxWorkers=4 --verbose --coverage",
-        "test": "ENV_FILE=./.env.test jest --verbose --maxWorkers=4"
+        "test:watch": "ENV_FILE=./.env.test jest --verbose --watch"
     },
     "author": "",
     "license": "ISC",

@@ -289,8 +289,6 @@ class AdventureCommands extends BaseCommands {
             const adventureRewardsMessageWin = makeAdventureRewards(allPlayerResults, allRewardResults);
             this.message.send(adventureRewardsMessageWin);
 
-            console.log(allSkillpointRewards);
-
             if (levelUpCount > 0) {
                 const earnedSkillpointsMessage = makeEarnedSkillpoints(allSkillpointRewards);
                 this.message.send(earnedSkillpointsMessage);

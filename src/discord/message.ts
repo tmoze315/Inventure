@@ -5,7 +5,7 @@ import { User } from './user';
 interface IMessage {
     content(): string;
     author(): User;
-    player(): Promise<IPlayer | null>;
+    player(): Promise<IPlayer>;
     guildId(): string | null;
     isFromBot(): boolean;
     send(data: any): Promise<any>;
@@ -26,7 +26,7 @@ class Message implements IMessage {
         return new User(user.id, user.username);
     }
 
-    async player(): Promise<IPlayer | null> {
+    async player(): Promise<IPlayer> {
         // Cache the current player to save DB queries
         if (this.currentPlayer) {
             return this.currentPlayer;
@@ -34,6 +34,10 @@ class Message implements IMessage {
 
         this.currentPlayer = await Player.findOne({ id: this.discordMessage.author.id }).exec();
 
+        if (!this.currentPlayer) {
+            throw new Error('No player found.');
+
+        }
         return this.currentPlayer;
     }
 

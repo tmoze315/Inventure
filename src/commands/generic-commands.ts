@@ -4,18 +4,18 @@ import { makeErrorMessage } from "../messages/error";
 import { makeInsufficientFundsClassNotSelectedMessage } from "../messages/insufficient-funds-class-not-selected";
 import { makeInvalidHeroclassMessage } from "../messages/invalid-heroclass";
 import { makeStartMessage } from "../messages/start-message";
-import { makeRebirthSuccessMessage } from "../messages/rebirth-success";
-import { makeRebirthFailureMessage } from "../messages/rebirth-failure";
 import { makeStatsMessage } from "../messages/stats";
 import { Player, IPlayer } from '../models/Player';
 import BaseCommands from "./base-commands";
 import { makeShowHeroclassesMessage } from "../messages/show-heroclasses";
 import { makeInsufficientSkillpointsMessage } from "../messages/insufficient-skillpoints";
 import { makeUsedSkillpointsMessage } from "../messages/used-skillpoints";
+import { makeSuccessMessage } from "../messages/success";
 
 class GenericCommands extends BaseCommands {
     async start() {
-        const player: IPlayer | null = await this.message.player();
+        const player: IPlayer | null = await Player.findOne({ id: this.message.author().id }).exec();
+        const players: any = await Player.find({}).exec();
 
         if (player) {
             this.message.send('Looks like you have already started your adventure!');
@@ -37,19 +37,15 @@ class GenericCommands extends BaseCommands {
     }
 
     async rebirth() {
-        const player: IPlayer | null = await this.message.player();
-
-        if (!player) {
-            return this.message.send('Player not found. Please try again');
-        }
+        const player: IPlayer = await this.message.player();
 
         try {
             await player.rebirth();
 
-            this.message.send(makeRebirthSuccessMessage(player.username, player.maxLevel));
+            this.message.send(makeSuccessMessage(`Congratulations ${player.username}! You've rebirthed! Your new max level is ${player.maxLevel}`));
             return;
         } catch (error) {
-            this.message.send(makeRebirthFailureMessage(player.username, player.maxLevel));
+            this.message.send(makeErrorMessage(`You must be level ${player.maxLevel} in order to rebirth.`));
         }
     }
 

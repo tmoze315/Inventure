@@ -17,10 +17,18 @@ class Message implements IMessage {
     }
 
     author(): User {
+        if (this._player) {
+            return new User(this._player.id, this._player.username);
+        }
+
         return new User(1, 'testing-user');
     }
 
-    async player(): Promise<IPlayer | null> {
+    async player(): Promise<IPlayer> {
+        if (!this._player) {
+            throw new Error('No player set.');
+        }
+
         return this._player;
     }
 
