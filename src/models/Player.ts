@@ -270,7 +270,15 @@ PlayerSchema.methods.getSkillpoint = function (skillpoint: string) {
 PlayerSchema.methods.getHeroClassDescription = function () {
 
     if (!this.class) {
-        return 'All heroes are destined for greatness, your journey begins now. When you reach level 10 you can choose your path and select a heroclass.';
+        let message = 'All heroes are destined for greatness, your journey begins now. ';
+
+        if (this.level >= 10) {
+            message += 'Select a hero class using the `-heroclass` command.'
+        } else {
+            message += 'When you reach level 10 you can choose your path and select a heroclass.';
+        }
+
+        return message;
     }
 
     if (this.class === 'Berserker') {

@@ -2,5 +2,5 @@ module.exports = {
     preset: 'ts-jest',
     testEnvironment: 'node',
     modulePathIgnorePatterns: ['dist'],
-    setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+    setupFilesAfterEnv: ['jest-extended', '<rootDir>/jest.setup.js'],
 };
