@@ -1,13 +1,9 @@
-import { makeClassNotSelectedMessage } from "../messages/class-not-selected";
-import { makeClassSelectedMessage } from "../messages/class-selected";
 import { makeErrorMessage } from "../messages/error";
-import { makeInsufficientFundsClassNotSelectedMessage } from "../messages/insufficient-funds-class-not-selected";
-import { makeInvalidHeroclassMessage } from "../messages/invalid-heroclass";
 import { makeStartMessage } from "../messages/start-message";
 import { makeStatsMessage } from "../messages/stats";
 import { Player, IPlayer } from '../models/Player';
 import BaseCommands from "./base-commands";
-import { makeShowHeroclassesMessage } from "../messages/show-heroclasses";
+import { makeHeroclassHelpMessage } from "../messages/heroclass-help";
 import { makeSuccessMessage } from "../messages/success";
 
 class GenericCommands extends BaseCommands {
@@ -115,41 +111,34 @@ class GenericCommands extends BaseCommands {
     // Lets players select their Heroclass
     async selectHeroclass(heroclass?: string) {
         if (this.guild.isLocked) {
-            return this.message.send(makeErrorMessage(`You cannot do that right now.`));
+            return this.message.send(makeErrorMessage(`You cannot select a hero class right now. Your attention is needed elsewhere.`));
         }
 
-        const player: IPlayer | null = await Player.findOne({ id: this.message.author().id }).exec();
-
-        if (!player) {
-            this.message.send('Player not found. Please try again');
-            return;
-        }
+        const player: IPlayer = await this.message.player();
 
         if (!heroclass) {
-            this.message.send(makeShowHeroclassesMessage(player.get('username')));
-            return;
+            return this.message.send(makeHeroclassHelpMessage(player));
         }
 
         if (player.get('level') < 10 && player.get('rebirths') < 2) {
-            this.message.send(makeClassNotSelectedMessage(player.get('username')));
+            this.message.send(makeErrorMessage(`${player.username}, you must be atleast level 10 to select a class.`));
             return;
         }
 
         const currentCurrency = player.get('currency');
-        const costToChangeHeroClass = player.get('rebirths') * 15000;
+        const cost = player.get('rebirths') * 15000;
 
-        if (currentCurrency < costToChangeHeroClass) {
-            this.message.send(makeInsufficientFundsClassNotSelectedMessage(player.get('username'), costToChangeHeroClass));
-            return;
+        if (currentCurrency < cost) {
+            return this.message.send(makeErrorMessage(`${player.username}, you need ${cost.toLocaleString()} gold to select a class.`));
         }
 
         try {
             await player.setHeroClass(heroclass);
-            await player.removeCurrency(costToChangeHeroClass);
+            await player.removeCurrency(cost);
 
-            this.message.send(makeClassSelectedMessage(player.get('username'), player.get('class')));
+            return this.message.send(makeSuccessMessage(`Congratulations ${player.username}, you are now a ${player.class}.`));
         } catch (exception) {
-            this.message.send(makeInvalidHeroclassMessage(player.get('username')));
+            return this.message.send(makeErrorMessage(`${player.username}, that class cannot be found.`));
         }
     }
 }

@@ -268,7 +268,6 @@ PlayerSchema.methods.getSkillpoint = function (skillpoint: string) {
 };
 
 PlayerSchema.methods.getHeroClassDescription = function () {
-
     if (!this.class) {
         let message = 'All heroes are destined for greatness, your journey begins now. ';
 
