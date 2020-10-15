@@ -35,6 +35,7 @@ describe('-stats', () => {
         expect(message.send).toBeCalledWith(expect.objectContaining({
             title: 'A level 99 Hero',
             description: expect.toIncludeMultiple([
+                'All heroes are destined for greatness, your journey begins now.',
                 'Select a hero class using the `-heroclass` command.',
                 'Rebirths: 9',
                 'Max-Level: 100',
@@ -87,7 +88,7 @@ describe('-stats', () => {
         await runApplication(message);
 
         expect(message.send).toBeCalledWith(expect.objectContaining({
-            description: expect.stringContaining('When you reach level 10 you can choose your path and select a heroclass.'),
+            description: expect.stringContaining('When you reach level 10 you can choose your path and select a class for your hero.'),
         }));
     });
 

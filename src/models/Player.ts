@@ -3,6 +3,7 @@ import { IEnemy } from '../interfaces/enemy';
 import { ItemSchema } from './Item';
 import { PlayerAttack } from '../commands/adventure-commands';
 import { IArea } from '../areas/base-area';
+import { getHeroClass, getHeroClassOrFail, HeroClass } from '../config/hero-classes';
 
 interface IPlayer extends Document {
     id: string,
@@ -18,8 +19,6 @@ interface IPlayer extends Document {
     currency: number,
     getLevel: Function,
     getHeroClass: Function,
-    getHeroClassDescription: Function,
-    getHeroClassThumbnail: Function,
     getRebirths: Function,
     getMaxLevel: Function,
     getStat: Function,
@@ -241,20 +240,14 @@ PlayerSchema.methods.getLevel = function () {
     return this.get('level') || 1;
 };
 
-PlayerSchema.methods.getHeroClass = function (): string {
-    return this.get('class') || 'Hero';
+PlayerSchema.methods.getHeroClass = function (): HeroClass {
+    return getHeroClass(this.class);
 };
 
 PlayerSchema.methods.setHeroClass = function (heroClass: string) {
-    heroClass = heroClass.toLowerCase();
-    const newHeroClass = heroClass.charAt(0).toUpperCase() + heroClass.slice(1).trim();
-    const options: Array<String> = ['Berserker', 'Wizard', 'Ranger', 'Cleric', 'Tinkerer'];
+    const heroClassObject: HeroClass = getHeroClassOrFail(heroClass);
 
-    if (!options.includes(newHeroClass)) {
-        throw new Error('Invalid hero class');
-    }
-
-    this.class = newHeroClass;
+    this.class = heroClassObject.name;
 
     return this.save();
 };
@@ -266,68 +259,6 @@ PlayerSchema.methods.getStat = function (stat: string): number {
 PlayerSchema.methods.getSkillpoint = function (skillpoint: string) {
     return this.get('skillpoints')[skillpoint] || 0;
 };
-
-PlayerSchema.methods.getHeroClassDescription = function () {
-    if (!this.class) {
-        let message = 'All heroes are destined for greatness, your journey begins now. ';
-
-        if (this.level >= 10) {
-            message += 'Select a hero class using the `-heroclass` command.'
-        } else {
-            message += 'When you reach level 10 you can choose your path and select a heroclass.';
-        }
-
-        return message;
-    }
-
-    if (this.class === 'Berserker') {
-        return 'Berserkers have the option to rage and add big bonuses to attacks, but fumbles hurt. Use the rage command when attacking in an adventure.';
-    }
-
-    if (this.class === 'Wizard') {
-        return `Wizards have the option to focus and add large bonuses to their magic, but their focus can sometimes go astray...\nUse the focus command when attacking in an adventure.`;
-    }
-
-    if (this.class === 'Ranger') {
-        return `Rangers can gain a special pet, which can find items and give reward bonuses.\nUse the pet command to see pet options.`;
-    }
-
-    if (this.class === 'Tinkerer') {
-        return `Tinkerers can forge two different items into a device bound to their very soul.\nUse the forge command.`;
-    }
-
-    if (this.class === 'Cleric') {
-        return `Clerics can bless the entire group when praying.\nUse the bless command when fighting in an adventure.`;
-    }
-};
-
-PlayerSchema.methods.getHeroClassThumbnail = function () {
-
-    if (!this.class) {
-        return 'https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/618476d18c95662c3352f18b5c3b5118/CLASSRogue.JPG';
-    }
-
-    if (this.class === 'Berserker') {
-        return 'https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/5cc20b78734ffe0d264885ada90cd961/CLASSBarbarian.JPG';
-    }
-
-    if (this.class === 'Wizard') {
-        return `https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/34b30b92157ecc2bf75af2bcf708ba5a/CLASSWizard.JPG`;
-    }
-
-    if (this.class === 'Ranger') {
-        return `https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/2f0bc2ec03ff460ee815abe46b725347/CLASSRanger.JPG`;
-    }
-
-    if (this.class === 'Tinkerer') {
-        return `https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/b633bd0239f0ee1ef5f47272c7814c01/CLASSNecromancer.JPG`;
-    }
-
-    if (this.class === 'Cleric') {
-        return `https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/56783c25637a39cb722076bec44bb29e/CLASSCleric.JPG`;
-    }
-}
-
 
 PlayerSchema.methods.getRebirths = function () {
     return this.get('rebirths') || 0;

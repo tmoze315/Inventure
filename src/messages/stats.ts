@@ -1,4 +1,5 @@
 import { MessageEmbed } from 'discord.js';
+import { HeroClass } from '../config/hero-classes';
 import { IPlayer } from '../models/Player';
 
 const makeStatsMessage = (player: IPlayer) => {
@@ -9,8 +10,20 @@ const makeStatsMessage = (player: IPlayer) => {
         nextLevel = maxLevel;
     }
 
+    const heroClass: HeroClass = player.getHeroClass();
+
+    let heroClassDescription = heroClass.description;
+
+    if (heroClass.name === 'Hero') {
+        if (player.level >= 10) {
+            heroClassDescription += ' Select a hero class using the `-heroclass` command.'
+        } else {
+            heroClassDescription += ' When you reach level 10 you can choose your path and select a class for your hero.';
+        }
+    }
+
     const desc = [
-        player.getHeroClassDescription(),
+        heroClassDescription,
         ``,
         `**Attributes**`,
         `\`\`\`css`,
@@ -34,9 +47,9 @@ const makeStatsMessage = (player: IPlayer) => {
     ];
 
     return new MessageEmbed()
-        .setTitle(`A level ${player.getLevel()} ${player.getHeroClass()}`)
+        .setTitle(`A level ${player.getLevel()} ${heroClass.name}`)
         .setDescription(desc.join('\n'))
-        .setThumbnail(player.getHeroClassThumbnail())
+        .setThumbnail(heroClass.thumbnail)
         .setFooter('Active bonuses: ( 0  | 0  | 0  | 0  | 0  ) - Attributes: 0% | EXP: 0% | Credits: 0% (TODO)');
 };
 
