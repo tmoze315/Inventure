@@ -286,23 +286,19 @@ PlayerSchema.methods.getHeroClassDescription = function () {
     }
 
     if (this.class === 'Wizard') {
-        return `Wizards have the option to focus and add large bonuses to their magic, but their focus can sometimes go astray...
-    Use the focus command when attacking in an adventure.`;
+        return `Wizards have the option to focus and add large bonuses to their magic, but their focus can sometimes go astray...\nUse the focus command when attacking in an adventure.`;
     }
 
     if (this.class === 'Ranger') {
-        return `Rangers can gain a special pet, which can find items and give reward bonuses.
-    Use the pet command to see pet options.`;
+        return `Rangers can gain a special pet, which can find items and give reward bonuses.\nUse the pet command to see pet options.`;
     }
 
     if (this.class === 'Tinkerer') {
-        return `Tinkerers can forge two different items into a device bound to their very soul.
-    Use the forge command.`;
+        return `Tinkerers can forge two different items into a device bound to their very soul.\nUse the forge command.`;
     }
 
     if (this.class === 'Cleric') {
-        return `Clerics can bless the entire group when praying.
-    Use the bless command when fighting in an adventure.`;
+        return `Clerics can bless the entire group when praying.\nUse the bless command when fighting in an adventure.`;
     }
 };
 

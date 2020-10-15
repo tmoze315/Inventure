@@ -54,13 +54,13 @@ class GenericCommands extends BaseCommands {
         let targetPlayerId = this.message.author().id;
 
         if (playerId) {
-            targetPlayerId = playerId?.replace(/[!@<>]/g, '');
+            targetPlayerId = playerId.replace(/[!@<>]/g, '');
         }
 
         const player: IPlayer | null = await Player.findOne({ id: targetPlayerId }).exec();
 
         if (!player) {
-            return this.message.send('Player not found. Please try again');
+            return this.message.send(makeErrorMessage('Player not found. Please try again.'));
         }
 
         return this.message.send(makeStatsMessage(player));

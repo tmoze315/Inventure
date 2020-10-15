@@ -2,7 +2,6 @@ import { MessageEmbed } from 'discord.js';
 import { IPlayer } from '../models/Player';
 
 const makeStatsMessage = (player: IPlayer) => {
-    // TODO: Actually make stats pull from player data
     let nextLevel = player.get('level') + 1;
     const maxLevel = player.get('maxLevel');
 
@@ -34,7 +33,6 @@ const makeStatsMessage = (player: IPlayer) => {
         `\`\`\``,
     ];
 
-    // return desc.join('\n');
     return new MessageEmbed()
         .setTitle(`A level ${player.getLevel()} ${player.getHeroClass()}`)
         .setDescription(desc.join('\n'))
