@@ -1,150 +1,144 @@
-import { makeAdventureInProgressMessage } from "../messages/adventure-in-progress";
-import { makeClassNotSelectedMessage } from "../messages/class-not-selected";
-import { makeClassSelectedMessage } from "../messages/class-selected";
 import { makeErrorMessage } from "../messages/error";
-import { makeInsufficientFundsClassNotSelectedMessage } from "../messages/insufficient-funds-class-not-selected";
-import { makeInvalidHeroclassMessage } from "../messages/invalid-heroclass";
-import { makeStandardMessage } from "../messages/standard-message";
 import { makeStartMessage } from "../messages/start-message";
-import { makeRebirthSuccessMessage } from "../messages/rebirth-success";
-import { makeRebirthFailureMessage } from "../messages/rebirth-failure";
 import { makeStatsMessage } from "../messages/stats";
 import { Player, IPlayer } from '../models/Player';
 import BaseCommands from "./base-commands";
-import { makeShowHeroclassesMessage } from "../messages/show-heroclasses";
-import { makeInsufficientSkillpointsMessage } from "../messages/insufficient-skillpoints";
-import { makeUsedSkillpointsMessage } from "../messages/used-skillpoints";
+import { makeHeroclassHelpMessage } from "../messages/heroclass-help";
+import { makeSuccessMessage } from "../messages/success";
 
 class GenericCommands extends BaseCommands {
-    // stats([first, last]: [string?, string?]) {
-    // Example parameters
-    // }
-
     async start() {
-        const player: IPlayer | null = await Player.findOne({ id: this.user.id }).exec();
+        const player: IPlayer | null = await Player.findOne({ id: this.message.author().id }).exec();
 
         if (player) {
-            this.message.channel.send('Looks like you have already started your adventure!');
+            this.message.send('Looks like you have already started your adventure!');
 
             return;
         }
 
+        const author = this.message.author();
+
         const newPlayer = new Player({
-            id: this.user.id,
+            id: author.id,
             guildId: this.guild.get('id'),
-            username: this.user.username,
+            username: author.username,
         });
 
-        newPlayer.save();
+        await newPlayer.save();
 
-        this.message.channel.send(makeStartMessage(newPlayer.get('username')));
+        return this.message.send(makeStartMessage(newPlayer.get('username')));
     }
 
     async rebirth() {
-        let targetPlayerId = this.message.author.id;
-        const player: IPlayer | null = await Player.findOne({ id: targetPlayerId }).exec();
-
-        if (!player) {
-            this.message.channel.send('Player not found. Please try again');
-            return;
+        if (this.guild.isLocked) {
+            return this.message.send(makeErrorMessage(`You cannot rebirth right now. Your attention is needed elsewhere.`));
         }
 
-        try {
-            await player.rebirth(targetPlayerId);
+        const player: IPlayer = await this.message.player();
 
-            this.message.channel.send(makeRebirthSuccessMessage(player.username, player.maxLevel));
+        try {
+            await player.rebirth();
+
+            this.message.send(makeSuccessMessage(`Congratulations ${player.username}! You've rebirthed! Your new max level is ${player.maxLevel}`));
             return;
         } catch (error) {
-            this.message.channel.send(makeRebirthFailureMessage(player.username, player.maxLevel));
+            this.message.send(makeErrorMessage(`You must be level ${player.maxLevel} in order to rebirth.`));
         }
     }
 
     async stats(playerId?: string) {
-        let targetPlayerId = this.message.author.id;
+        let targetPlayerId = this.message.author().id;
 
         if (playerId) {
-            targetPlayerId = playerId?.replace(/[!@<>]/g, '');
+            targetPlayerId = playerId.replace(/[!@<>]/g, '');
         }
 
         const player: IPlayer | null = await Player.findOne({ id: targetPlayerId }).exec();
 
         if (!player) {
-            this.message.channel.send('Player not found. Please try again');
-            return;
+            return this.message.send(makeErrorMessage('Player not found. Please try again.'));
         }
 
-        this.message.channel.send(makeStatsMessage(player));
-       
+        return this.message.send(makeStatsMessage(player));
     }
 
-    async skillpoints(skill: string, amount?: number) {
-        let targetPlayerId = this.message.author.id;
-
-        const player: IPlayer | null = await Player.findOne({ id: targetPlayerId }).exec();
-
-        if (!player) {
-            this.message.channel.send('Player not found. Please try again');
-            return;
+    async skillpoints(skill: string, amount: number = 1) {
+        if (this.guild.isLocked) {
+            return this.message.send(makeErrorMessage(`You cannot use your skillpoints right now. Your attention is needed elsewhere.`));
         }
 
-        if (!skill){
-            this.message.channel.send(makeErrorMessage(`You must include the desired skill using -skill [skill name]!`));
-            return;
+        const player: IPlayer = await this.message.player();
+
+        if (!skill) {
+            return this.message.send(makeErrorMessage(`You must include the desired skill using -skill [skill name]!`));
         }
 
-        const useSkill = await player.useSkillpoints(skill, amount, player);
-
-        if(!useSkill.worked){
-        const skillpointsNotUsedMessage = makeInsufficientSkillpointsMessage(player.username);
-        this.message.channel.send(skillpointsNotUsedMessage);
+        if (amount <= 0 || isNaN(amount) || amount % 1 !== 0) {
+            return this.message.send(makeErrorMessage(`${player.username}, you must provide a valid skillpoint amount.`));
         }
 
-        if(useSkill.worked){
-        const skillpointsUsedMessage = makeUsedSkillpointsMessage(useSkill);
-        this.message.channel.send(skillpointsUsedMessage);
+        const availableSkills = [
+            {
+                key: 'attack',
+                acceptedValues: ['attack', 'att'],
+            },
+            {
+                key: 'charisma',
+                acceptedValues: ['charisma', 'cha', 'char'],
+            },
+            {
+                key: 'intelligence',
+                acceptedValues: ['intelligence', 'int', 'intel'],
+            },
+        ];
+
+        const availableSkill = availableSkills.find((item) => {
+            return item.acceptedValues.includes(skill.toLowerCase());
+        });
+        if (!availableSkill) {
+            return this.message.send(makeErrorMessage(`${player.username}, that skill cannot be found.`));
         }
 
+        try {
+            await player.useSkillpoints(availableSkill.key, amount, player);
+
+            return this.message.send(makeSuccessMessage(`${player.username}, you have increased your ${availableSkill.key} by ${amount}.`));
+        } catch (error) {
+            return this.message.send(makeErrorMessage(`${player.username}, you don't have enough skillpoints.`));
+        }
     }
 
     // Lets players select their Heroclass
     async selectHeroclass(heroclass?: string) {
         if (this.guild.isLocked) {
-            this.message.channel.send(makeErrorMessage(`You cannot do that right now.`));
-            return;
+            return this.message.send(makeErrorMessage(`You cannot select a hero class right now. Your attention is needed elsewhere.`));
         }
 
-        const player: IPlayer | null = await Player.findOne({ id: this.message.author.id }).exec();
-
-        if (!player) {
-            this.message.channel.send('Player not found. Please try again');
-            return;
-        }
+        const player: IPlayer = await this.message.player();
 
         if (!heroclass) {
-            this.message.channel.send(makeShowHeroclassesMessage(player.get('username')));
-            return;
+            return this.message.send(makeHeroclassHelpMessage(player));
         }
 
         if (player.get('level') < 10 && player.get('rebirths') < 2) {
-            this.message.channel.send(makeClassNotSelectedMessage(player.get('username')));
+            this.message.send(makeErrorMessage(`${player.username}, you must be atleast level 10 to select a class.`));
             return;
         }
 
         const currentCurrency = player.get('currency');
-        const costToChangeHeroClass = player.get('rebirths') * 15000;
+        const cost = player.get('rebirths') * 15000;
 
-        if (currentCurrency < costToChangeHeroClass) {
-            this.message.channel.send(makeInsufficientFundsClassNotSelectedMessage(player.get('username'), costToChangeHeroClass));
-            return;
+        if (currentCurrency < cost) {
+            return this.message.send(makeErrorMessage(`${player.username}, you need ${cost.toLocaleString()} gold to select a class.`));
         }
 
         try {
             await player.setHeroClass(heroclass);
-            await player.removeCurrency(costToChangeHeroClass);
+            await player.removeCurrency(cost);
 
-            this.message.channel.send(makeClassSelectedMessage(player.get('username'), player.get('class')));
+            return this.message.send(makeSuccessMessage(`Congratulations ${player.username}, you are now a ${player.class}.`));
         } catch (exception) {
-            this.message.channel.send(makeInvalidHeroclassMessage(player.get('username')));
+            return this.message.send(makeErrorMessage(`${player.username}, that class cannot be found.`));
         }
     }
 }

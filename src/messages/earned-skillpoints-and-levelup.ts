@@ -8,31 +8,30 @@ const makeEarnedSkillpoints = (allSkillpointRewards: EarnedSkillpoints[]) => {
 
     let desc = [
         `Use them wisely.`,
-        
+
     ];
 
-    
+
 
     // \n💥 Bonus Damage: 301
     let embed = new MessageEmbed()
         .setColor('DARK_GREEN') // WIN/LOSE colours
     for (let i = 0; i < allSkillpointRewards.length; i++) {
-        
-        
+
+
         let end = 's!';
 
-        if (allSkillpointRewards[i].totalSkillpoints === 1){
-            end = '!';         
+        if (allSkillpointRewards[i].totalSkillpoints === 1) {
+            end = '!';
         }
-        
+
         let fieldValue = `, and you've earned **${allSkillpointRewards[i].totalSkillpoints}** Skillpoint${end}`
 
 
-        if(allSkillpointRewards[i].totalSkillpoints === 0){
+        if (allSkillpointRewards[i].totalSkillpoints === 0) {
             fieldValue = `!`
         }
 
-        console.log(allSkillpointRewards[i].totalSkillpoints);
         embed.addFields(
             <EmbedFieldData>{
                 name: `${allSkillpointRewards[i].player.username}`,

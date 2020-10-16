@@ -3,7 +3,7 @@ import { IEnemy } from '../interfaces/enemy';
 import { ItemSchema } from './Item';
 import { PlayerAttack } from '../commands/adventure-commands';
 import { IArea } from '../areas/base-area';
-import { makeEarnedSkillpoints } from '../messages/earned-skillpoints-and-levelup';
+import { getHeroClass, getHeroClassOrFail, HeroClass } from '../config/hero-classes';
 
 interface IPlayer extends Document {
     id: string,
@@ -19,8 +19,6 @@ interface IPlayer extends Document {
     currency: number,
     getLevel: Function,
     getHeroClass: Function,
-    getHeroClassDescription: Function,
-    getHeroClassThumbnail: Function,
     getRebirths: Function,
     getMaxLevel: Function,
     getStat: Function,
@@ -51,6 +49,8 @@ interface IPlayer extends Document {
     useSkillpoints: Function,
 }
 
+type Skillpoint = 'attack' | 'intelligence' | 'charisma';
+
 interface RewardResult {
     player: IPlayer,
     xpRoll: number,
@@ -68,13 +68,6 @@ interface EarnedSkillpoints {
     level: number,
     totalSkillpoints: number,
     levelUp: boolean,
-}
-
-interface SkillpointResults{
-    player: IPlayer,
-    finalPoints: number,
-    skill: string,
-    worked: boolean,
 }
 
 const PlayerSchema = new Schema({
@@ -247,20 +240,14 @@ PlayerSchema.methods.getLevel = function () {
     return this.get('level') || 1;
 };
 
-PlayerSchema.methods.getHeroClass = function (): string {
-    return this.get('class') || 'Hero';
+PlayerSchema.methods.getHeroClass = function (): HeroClass {
+    return getHeroClass(this.class);
 };
 
 PlayerSchema.methods.setHeroClass = function (heroClass: string) {
-    heroClass = heroClass.toLowerCase();
-    const newHeroClass = heroClass.charAt(0).toUpperCase() + heroClass.slice(1).trim();
-    const options: Array<String> = ['Berserker', 'Wizard', 'Ranger', 'Cleric', 'Tinkerer'];
+    const heroClassObject: HeroClass = getHeroClassOrFail(heroClass);
 
-    if (!options.includes(newHeroClass)) {
-        throw new Error('Invalid hero class');
-    }
-
-    this.class = newHeroClass;
+    this.class = heroClassObject.name;
 
     return this.save();
 };
@@ -272,65 +259,6 @@ PlayerSchema.methods.getStat = function (stat: string): number {
 PlayerSchema.methods.getSkillpoint = function (skillpoint: string) {
     return this.get('skillpoints')[skillpoint] || 0;
 };
-
-PlayerSchema.methods.getHeroClassDescription = function () {
-
-    if (!this.class) {
-        return 'All heroes are destined for greatness, your journey begins now. When you reach level 10 you can choose your path and select a heroclass.';
-    }
-
-    if (this.class === 'Berserker') {
-        return 'Berserkers have the option to rage and add big bonuses to attacks, but fumbles hurt. Use the rage command when attacking in an adventure.';
-    }
-
-    if (this.class === 'Wizard') {
-        return `Wizards have the option to focus and add large bonuses to their magic, but their focus can sometimes go astray...
-    Use the focus command when attacking in an adventure.`;
-    }
-
-    if (this.class === 'Ranger') {
-        return `Rangers can gain a special pet, which can find items and give reward bonuses.
-    Use the pet command to see pet options.`;
-    }
-
-    if (this.class === 'Tinkerer') {
-        return `Tinkerers can forge two different items into a device bound to their very soul.
-    Use the forge command.`;
-    }
-
-    if (this.class === 'Cleric') {
-        return `Clerics can bless the entire group when praying.
-    Use the bless command when fighting in an adventure.`;
-    }
-};
-
-PlayerSchema.methods.getHeroClassThumbnail = function () {
-
-    if (!this.class) {
-        return 'https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/618476d18c95662c3352f18b5c3b5118/CLASSRogue.JPG';
-    }
-
-    if (this.class === 'Berserker') {
-        return 'https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/5cc20b78734ffe0d264885ada90cd961/CLASSBarbarian.JPG';
-    }
-
-    if (this.class === 'Wizard') {
-        return `https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/34b30b92157ecc2bf75af2bcf708ba5a/CLASSWizard.JPG`;
-    }
-
-    if (this.class === 'Ranger') {
-        return `https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/2f0bc2ec03ff460ee815abe46b725347/CLASSRanger.JPG`;
-    }
-
-    if (this.class === 'Tinkerer') {
-        return `https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/b633bd0239f0ee1ef5f47272c7814c01/CLASSNecromancer.JPG`;
-    }
-
-    if (this.class === 'Cleric') {
-        return `https://trello-attachments.s3.amazonaws.com/5f6ae9c8643990173240eb3c/5f6b44d2da1f5b269987c47e/56783c25637a39cb722076bec44bb29e/CLASSCleric.JPG`;
-    }
-}
-    
 
 PlayerSchema.methods.getRebirths = function () {
     return this.get('rebirths') || 0;
@@ -377,6 +305,7 @@ PlayerSchema.methods.giveExperience = async function (experience: number) {
 
 PlayerSchema.methods.setLevel = function (level: number) {
     this.level = level;
+    this.experience = this.getExperienceNeededForLevel(this.level);
 
     return this.save();
 };
@@ -496,7 +425,7 @@ PlayerSchema.methods.getLevelForCurrentExperience = function (enemy: IEnemy, are
 PlayerSchema.methods.handleLevelUp = async function () {
     const levelForCurrentExperience = this.getLevelForCurrentExperience();
     let newLevel = levelForCurrentExperience;
- 
+
     if (levelForCurrentExperience > this.maxLevel) {
         this.experience = this.getExperienceNeededForLevel(this.maxLevel);
 
@@ -505,47 +434,43 @@ PlayerSchema.methods.handleLevelUp = async function () {
 
     this.level = newLevel;
 
-//    const save = this.save();
-
     return newLevel;
 };
 
 PlayerSchema.methods.handleSkillpointRewards = async function (startLevel: number, endLevel: number, player: IPlayer) {
-    
+
     let allPassedLevels = [];
     let sumEven = 0;
     let levelUp = false;
 
     for (let i = startLevel + 1; i <= endLevel; i++) {
-    allPassedLevels.push(i);
+        allPassedLevels.push(i);
     }
 
-    if(allPassedLevels.length > 0){
-    for (let i = 0; i <= allPassedLevels.length; i++) {
-        if (allPassedLevels[i] % 2 === 0) {
-          sumEven++;
+    if (allPassedLevels.length > 0) {
+        for (let i = 0; i <= allPassedLevels.length; i++) {
+            if (allPassedLevels[i] % 2 === 0) {
+                sumEven++;
+            }
         }
     }
-}
-const currentPoints = this.get(`skillpoints.unspent`);
-const newPoints = this.set(`skillpoints.unspent`, (sumEven + Number(currentPoints)));
+    const currentPoints = this.get(`skillpoints.unspent`);
+    const newPoints = this.set(`skillpoints.unspent`, (sumEven + Number(currentPoints)));
 
-    if(startLevel < endLevel)
-    {
+    if (startLevel < endLevel) {
         levelUp = true;
     }
-    else{
+    else {
         levelUp = false;
     }
-const save = this.save();
+    const save = this.save();
 
-    console.log(allPassedLevels);
     return <EarnedSkillpoints>{
         player: this,
         level: endLevel,
         totalSkillpoints: sumEven,
         levelUp: levelUp,
-        }
+    }
 };
 
 
@@ -554,19 +479,27 @@ PlayerSchema.methods.rebirth = async function () {
         throw new Error('Cannot rebirth');
     }
 
-    const options: Array<String> = ['attack', 'charisma', 'intelligence','unspent'];
-    
+    this.set('skillpoints.attack', 0);
+    this.set('skillpoints.charisma', 0);
+    this.set('skillpoints.intelligence', 0);
 
-    for (let i = 0; i <= options.length; i++) {
-        const currentPointsInSkill = this.get(`skillpoints.${options[i]}`);
-        const newPointsInSkill = this.set(`skillpoints.${options[i]}`, 0 );
-    }
+    this.set('stats.attack', 1);
+    this.set('stats.charisma', 1);
+    this.set('stats.intelligence', 1);
+    this.set('stats.luck', 1);
+    this.set('stats.dexterity', 1);
+    this.set('stats.unspent', 1);
 
     this.experience = 1;
     this.level = 1;
 
     this.rebirths += 1
     this.maxLevel += 10;
+
+    // Give the user more skillpoints to assign each rebirth
+    const skillpoints = Math.ceil(Math.pow(this.rebirths, 1.8));
+
+    this.set('skillpoints.unspent', skillpoints);
 
     return this.save();
 };
@@ -578,13 +511,13 @@ PlayerSchema.methods.postBattleRewards = function (player: IPlayer, enemy: IEnem
     let bonusGoldPercentage = 0;
     let bonusXpPercentage = 0;
     const baseGold = Math.round((enemy.baseHp * 10)) * enemy.goldMultiplier * area.goldMultiplier;
-    const baseXp =  Math.round(enemy.baseHp * enemy.xpMultiplier * area.xpMultiplier);
+    const baseXp = Math.round(enemy.baseHp * enemy.xpMultiplier * area.xpMultiplier);
 
-    if (goldRoll >= 20){
+    if (goldRoll >= 20) {
         bonusGoldPercentage = 1.2;
     }
 
-    else if (goldRoll >= 10){
+    else if (goldRoll >= 10) {
         bonusGoldPercentage = 1.15;
     }
 
@@ -592,11 +525,11 @@ PlayerSchema.methods.postBattleRewards = function (player: IPlayer, enemy: IEnem
         bonusGoldPercentage = 1;
     }
 
-    if (xpRoll >= 20){
+    if (xpRoll >= 20) {
         bonusXpPercentage = 1.2;
     }
 
-    else if (xpRoll >= 10){
+    else if (xpRoll >= 10) {
         bonusXpPercentage = 1.15;
     }
 
@@ -621,60 +554,27 @@ PlayerSchema.methods.postBattleRewards = function (player: IPlayer, enemy: IEnem
     };
 };
 
-PlayerSchema.methods.useSkillpoints = async function (desiredSkill: string, amount?: number) {
-    
-    let realAmount = 0;
-    let skill = desiredSkill.toLowerCase();
-    let worked = false;
-
-    const options: Array<String> = ['attack', 'charisma', 'intelligence', 'att', 'cha', 'int'];
-
-    if (!options.includes(skill)) {
-        worked = false;
-        return;
+PlayerSchema.methods.useSkillpoints = function (skill: Skillpoint, amount: number = 1) {
+    if (typeof amount === 'string') {
+        amount = parseInt(amount);
     }
 
-    if(skill == 'att'){
-        skill = 'attack';
-    }
-    if(skill == 'cha'){
-        skill = 'charisma';
-    }
-    if(skill == 'int'){
-        skill = 'intelligence';
-    }
-
-    if(!amount){
-        realAmount = 1;
-    }
-    if(amount){
-        realAmount = amount;
-    }
-
-    
     const currentPoints = this.get(`skillpoints.unspent`);
 
-    if(currentPoints >= realAmount){
-        const currentPointsInSkill = this.get(`skillpoints.${skill}`);
-        const newPointsInSkill = this.set(`skillpoints.${skill}`, (Number(currentPointsInSkill) + Number(realAmount)));
-        const removeUnspent = this.set(`skillpoints.unspent`, (Number(currentPoints) - Number(realAmount)));
-        worked = true;
+    if (currentPoints < amount) {
+        throw new Error('You do not have enough skill points.');
+    }
 
-    }
-    else{
-        worked = false;
-    }
-    const finalPointsInSkill = await this.get(`skillpoints.${skill}`);
-    const save = await this.save();
+    const skills: Array<string> = ['attack', 'charisma', 'intelligence'];
 
-    return <SkillpointResults>{
-        player: this,
-        finalPoints: finalPointsInSkill,
-        skill,
-        worked,
-    }
+    const currentPointsInSkill = parseInt(this.get(`skillpoints.${skill}`));
+
+    this.set(`skillpoints.${skill}`, currentPointsInSkill + amount);
+    this.set(`skillpoints.unspent`, currentPoints - amount);
+
+    return this.save();
 };
 
 const Player = model<IPlayer>('Player', PlayerSchema);
 
-export { Player, PlayerSchema, IPlayer, RewardResult, EarnedSkillpoints, SkillpointResults };
+export { Player, PlayerSchema, IPlayer, RewardResult, EarnedSkillpoints };
