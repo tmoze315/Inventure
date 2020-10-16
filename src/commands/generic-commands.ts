@@ -1,10 +1,17 @@
 import { makeErrorMessage } from "../messages/error";
 import { makeStartMessage } from "../messages/start-message";
 import { makeStatsMessage } from "../messages/stats";
+import { makeBackpackMessage } from "../messages/backpack";
 import { Player, IPlayer } from '../models/Player';
 import BaseCommands from "./base-commands";
 import { makeHeroclassHelpMessage } from "../messages/heroclass-help";
 import { makeSuccessMessage } from "../messages/success";
+import { makeAvailableLootMessage } from "../messages/available-loot";
+import { makeChestsOpenedResultsMessage } from "../messages/chests-opened-results";
+import { makeStandardMessage } from "../messages/standard-message";
+import { makeEquippedItemsMessage } from "../messages/equipped-items";
+import { makeItemEquippedMessage } from "../messages/item-equipped";
+import { makeItemUnequippedMessage } from "../messages/item-unequipped";
 
 class GenericCommands extends BaseCommands {
     async start() {
@@ -140,6 +147,116 @@ class GenericCommands extends BaseCommands {
         } catch (exception) {
             return this.message.send(makeErrorMessage(`${player.username}, that class cannot be found.`));
         }
+    }
+
+    async loot(type?: string, amount?: number) {
+        const player: IPlayer = await this.message.player();
+
+        const options: Array<String> = ['normal', 'rare', 'epic', 'legendary', 'ascended', 'set'];
+
+        let thisAmount = 0;
+
+        if (type === undefined) {
+            const availableChests = await player.returnLoot(player);
+            const availableLootMessage = await makeAvailableLootMessage(availableChests, player);
+
+            return this.message.send(availableLootMessage);
+        }
+
+        if (amount === undefined) {
+            thisAmount = 1;
+        } else {
+            thisAmount = amount;
+        }
+
+        const thisType = type;
+        const thisTypeCaseFixed = thisType.toLowerCase();
+
+        if (!options.includes(thisTypeCaseFixed)) {
+            const improperName = makeStandardMessage('Are you sure you typed the chest type properly?\n Try again using [normal, rare, epic, legendary, ascended, set]');
+            return this.message.send(improperName);
+        }
+
+        const generateItems = await player.makeItem(thisTypeCaseFixed, thisAmount);
+
+        if (generateItems.enough == false) {
+            const notEnoughChests = await makeStandardMessage(`Sorry, it looks like you don't have enough chests to do that!`);
+            return this.message.send(notEnoughChests);
+        }
+
+        if (generateItems.enough == true) {
+            const success = await makeChestsOpenedResultsMessage(generateItems);
+
+            return this.message.send(success);
+        }
+
+        return;
+    }
+
+    async backpack() {
+        const player: IPlayer = await this.message.player();
+
+        const backpack = await player.returnBackpack();
+        const formattedBackpack = await makeBackpackMessage(player, backpack);
+
+        return this.message.send(formattedBackpack);
+    }
+
+    async equip(name: string) {
+        const player: IPlayer = await this.message.player();
+
+        if (!name) {
+            return this.message.send('No item name placeholder.');
+        }
+
+        const itemName = name.charAt(0).toUpperCase() + name.slice(1).trim();
+
+        const equipItem = await player.equip(itemName, player);
+
+        if (equipItem.worked) {
+            const itemEquippedMessage = await makeItemEquippedMessage(equipItem.selectedItem, player);
+            this.message.send(itemEquippedMessage);
+        }
+
+        if (equipItem.noItem) {
+            return this.message.send('You cannot equip an item you do not own!');
+        }
+
+        if (!equipItem.worked) {
+            return this.message.send('Did not work placeholder.');
+        }
+
+        return;
+    }
+
+    async unequip(name: string) {
+        const player: IPlayer = await this.message.player();
+
+        if (!name) {
+            return this.message.send('No item name placeholder.');;
+        }
+
+        const itemName = name.charAt(0).toUpperCase() + name.slice(1).trim();
+        const unequipItem = await player.unequipItemExternal(itemName, player);
+
+        if (unequipItem.worked == true) {
+            const itemUnequippedMessage = await makeItemUnequippedMessage(unequipItem.currentlyEquippedItem, player);
+            return this.message.send(itemUnequippedMessage);
+        }
+
+        return;
+    }
+
+    async showEquipped() {
+        const player: IPlayer = await this.message.player();
+
+        if (!player) {
+            return this.message.send('Player not found. Please try again');
+        }
+
+        const showEquipped = await makeEquippedItemsMessage(player);
+
+        return this.message.send(showEquipped);
     }
 }
 

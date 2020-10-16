@@ -16,6 +16,12 @@ interface IArea {
     totalQuestItemsNeeded: number;
     xpMultiplier: number;
     goldMultiplier: number;
+    normalChestDropRate: number;
+    rareChestDropRate: number;
+    epicChestDropRate: number;
+    legendaryChestDropRate: number;
+    ascendedChestDropRate: number;
+    setChestDropRate: number;
 }
 
 /**
@@ -39,6 +45,12 @@ abstract class BaseArea implements IArea {
     public totalQuestItemsNeeded: number = 5;
     public xpMultiplier: number = 1.0;
     public goldMultiplier: number = 1.0;
+    public normalChestDropRate: number = 0.5;
+    public rareChestDropRate: number = 0.4;
+    public epicChestDropRate: number = 0.3;
+    public legendaryChestDropRate: number = 0.2;
+    public ascendedChestDropRate: number = 0.1;
+    public setChestDropRate: number = 0.05;
 
     protected abstract miniBossSpawnsOneIn: number;
     protected abstract getEnemyPool(): Array<IEnemy>;

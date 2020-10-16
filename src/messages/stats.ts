@@ -42,7 +42,7 @@ const makeStatsMessage = (player: IPlayer) => {
         `\`\`\`css`,
         `- Currency: ${player.get('currency').toLocaleString()}`,
         `- Experience: ${player.get('experience').toLocaleString()}/${player.getExperienceNeededForLevel(nextLevel).toLocaleString()}`,
-        `- Unspent Skillpoints: ${player.getSkillpoint('unspent')} `,
+        `- Unspent Skillpoints: ${player.getSkillpoint('unspent')}`,
         `\`\`\``,
     ];
 

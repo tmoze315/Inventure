@@ -26,23 +26,18 @@ class AdminCommands extends BaseCommands {
     // Makes any player an administrator with -makeadmin [@username] ?[password] (Password is optional. If you are already an admin you don't need to enter it.)
     async makeAdmin(id: string, password?: string) {
         if (!id || id === '') {
-            this.message.send('Oops! Looks like you forgot to include the username of the player you are promoting! Please try again with -makeadmin [@username]');
-            return;
+            return this.message.send('Oops! Looks like you forgot to include the username of the player you are promoting! Please try again with -makeadmin [@username]');
         }
 
         const targetPlayerId = id.replace(/[!@<>]/g, '');
         const targetPlayer: IPlayer | null = await Player.findOne({ id: targetPlayerId }).exec();
 
         if (password && password !== AdventureConfig.adminPassword) {
-            this.message.send(makeNotAdminMessage(this.message.author().username));
-
-            return;
+            return this.message.send(makeNotAdminMessage(this.message.author().username));
         }
 
         if (!password && !await this.isAdmin()) {
-            this.message.send(makeNotAdminMessage(this.message.author().username));
-
-            return;
+            return this.message.send(makeNotAdminMessage(this.message.author().username));
         }
 
         if (!targetPlayer) {
@@ -51,120 +46,104 @@ class AdminCommands extends BaseCommands {
 
         await targetPlayer.makeAdmin();
 
-        this.message.send(makeAdminMessage(id));
+        return this.message.send(makeAdminMessage(id));
     }
 
     async ban(id: string) {
         if (!await this.isAdmin()) {
-            this.message.send(makeNotAdminMessage(this.message.author().username));
-            return;
+            return this.message.send(makeNotAdminMessage(this.message.author().username));
         }
 
         if (!id || id === '') {
-            this.message.send('Oops! Looks like you forgot to include the username being banned! Please try again with -ban [@username]');
-            return;
+            return this.message.send('Oops! Looks like you forgot to include the username being banned! Please try again with -ban [@username]');
         }
 
         const targetPlayerId = id.replace(/[!@<>]/g, '');
         const targetPlayer: IPlayer | null = await Player.findOne({ id: targetPlayerId }).exec();
 
         if (!targetPlayer) {
-            this.message.send('Player not found. Please try again');
-            return;
+            return this.message.send('Player not found. Please try again');
         }
 
         await targetPlayer.ban();
 
-        this.message.send(makeBannedMessage(targetPlayer.get('username')));
+        return this.message.send(makeBannedMessage(targetPlayer.get('username')));
     }
 
     async unban(id: string) {
         if (!await this.isAdmin()) {
-            this.message.send(makeNotAdminMessage(this.message.author().username));
-            return;
+            return this.message.send(makeNotAdminMessage(this.message.author().username));
         }
 
         if (!id || id === '') {
-            this.message.send('Oops! Looks like you forgot to include the username being unbanned! Please try again with -unban [@username]');
-            return;
+            return this.message.send('Oops! Looks like you forgot to include the username being unbanned! Please try again with -unban [@username]');
         }
 
         const targetPlayerId = id.replace(/[!@<>]/g, '');
         const targetPlayer: IPlayer | null = await Player.findOne({ id: targetPlayerId }).exec();
 
         if (!targetPlayer) {
-            this.message.send('Player not found. Please try again');
-            return;
+            return this.message.send('Player not found. Please try again');
         }
 
         await targetPlayer.unban();
 
-        this.message.send(makeUnbannedMessage(targetPlayer.get('username')));
+        return this.message.send(makeUnbannedMessage(targetPlayer.get('username')));
     }
 
     // Clears any adventure currently on the board
     async clearAdventure() {
         if (!await this.isAdmin()) {
-            this.message.send(makeNotAdminMessage(this.message.author().username));
-            return;
+            return this.message.send(makeNotAdminMessage(this.message.author().username));
         }
 
         await this.guild.startAdventureCooldown();
         await this.guild.unlock();
 
-        this.message.send(makeAdventureResetMessage());
+        return this.message.send(makeAdventureResetMessage());
     }
 
     // Give any player currency using -addcur [amount] [@username]
     async addCurrency(amount: number, id: string) {
         if (!await this.isAdmin()) {
-            this.message.send(makeNotAdminMessage(this.message.author().username));
-            return;
+            return this.message.send(makeNotAdminMessage(this.message.author().username));
         }
 
         if (!amount) {
-            this.message.send('Oops! Looks like you forgot to include the currency amount! Please try again with -addcur [amount] [@username]');
-            return;
+            return this.message.send('Oops! Looks like you forgot to include the currency amount! Please try again with -addcur [amount] [@username]');
         }
 
         if (!id) {
-            this.message.send('Oops! Looks like you forgot to include the the player! Please try again with -addcur [amount] [@username]');
-            return;
+            return this.message.send('Oops! Looks like you forgot to include the the player! Please try again with -addcur [amount] [@username]');
         }
 
         const targetPlayerId = id.replace(/[!@<>]/g, '');
         const targetPlayer: IPlayer | null = await Player.findOne({ id: targetPlayerId }).exec();
 
         if (!targetPlayer) {
-            this.message.send('Player not found. Please try again');
-            return;
+            return this.message.send('Player not found. Please try again');
         }
 
         if (!await this.isAdmin()) {
-            this.message.send(makeNotAdminMessage(this.message.author().username));
-            return;
+            return this.message.send(makeNotAdminMessage(this.message.author().username));
         }
 
         await targetPlayer.addCurrency(amount);
 
         this.message.send(makeCurrencyAddedMessage(id, targetPlayer.get('currency')));
     }
-
     // Change any players Level
     async changeLevel(level: number, id: string) {
         if (!await this.isAdmin()) {
-            this.message.send(makeNotAdminMessage(this.message.author().username));
-            return;
+            return this.message.send(makeNotAdminMessage(this.message.author().username));
         }
 
         if (!level) {
-            this.message.send('Oops! Looks like you forgot to include the desired level! Please try again with -changelevel [level] [@username]');
-            return;
+            return this.message.send('Oops! Looks like you forgot to include the desired level! Please try again with -changelevel [level] [@username]');
         }
 
         if (!id) {
-            this.message.send('Oops! Looks like you forgot to include the player! Please try again with -changelevel [level] [@username]');
-            return;
+            return this.message.send('Oops! Looks like you forgot to include the player! Please try again with -changelevel [level] [@username]');
         }
 
         const targetPlayerId = id.replace(/[!@<>]/g, '');
@@ -177,24 +156,21 @@ class AdminCommands extends BaseCommands {
         const xp = targetPlayer.getExperienceNeededForLevel(level);
         await targetPlayer.setExperience(xp);
 
-        this.message.send(makeLevelChangedMessage(targetPlayer.get('username'), level));
+        return this.message.send(makeLevelChangedMessage(targetPlayer.get('username'), level));
     }
 
     // Change any players Level
     async setExperience(xp: number, id: string) {
         if (!await this.isAdmin()) {
-            this.message.send(makeNotAdminMessage(this.message.author().username));
-            return;
+            return this.message.send(makeNotAdminMessage(this.message.author().username));;
         }
 
         if (!xp) {
-            this.message.send('Oops! Looks like you forgot to include the XP amount! Please try again with -setxp [amount] [@username]');
-            return;
+            return this.message.send('Oops! Looks like you forgot to include the XP amount! Please try again with -setxp [amount] [@username]');
         }
 
         if (!id) {
-            this.message.send('Oops! Looks like you forgot to include the player! Please try again with -setxp [amount] [@username]');
-            return;
+            return this.message.send('Oops! Looks like you forgot to include the player! Please try again with -setxp [amount] [@username]');
         }
 
         const targetPlayerId = id.replace(/[!@<>]/g, '');
@@ -206,7 +182,7 @@ class AdminCommands extends BaseCommands {
 
         await targetPlayer.setExperience(xp);
 
-        this.message.send(makeXPLevelChangedMessage(targetPlayer.get('username'), xp));
+        return this.message.send(makeXPLevelChangedMessage(targetPlayer.get('username'), xp));
     }
 
     // Gives x amount of XP to any player using input method -givexp [amount] [@username]
@@ -235,7 +211,7 @@ class AdminCommands extends BaseCommands {
 
         await targetPlayer.giveExperience(xp);
 
-        this.message.send(makeXPLevelChangedMessage(targetPlayer.get('username'), targetPlayer.get('experience')));
+        return this.message.send(makeXPLevelChangedMessage(targetPlayer.get('username'), targetPlayer.get('experience')));
     }
 
     // Change any players rebirth level
@@ -250,21 +226,61 @@ class AdminCommands extends BaseCommands {
 
         await targetPlayer.setRebirths(rebirths);
 
-        this.message.send(makeRebirthsChangedMessage(targetPlayer.get('username'), rebirths));
+        return this.message.send(makeRebirthsChangedMessage(targetPlayer.get('username'), rebirths));
     }
 
     // Reset all cooldowns (UNFINISHED)
     async resetCooldowns() {
         if (!await this.isAdmin()) {
-            this.message.send(makeNotAdminMessage(this.message.author().username));
-            return;
+            return this.message.send(makeNotAdminMessage(this.message.author().username));
         }
 
         await Player.updateMany({ "hasUsedAbility": true },
             { $set: { "hasUsedAbility": false } },
         );
 
-        this.message.send(makeCooldownsResetMessage());
+        return this.message.send(makeCooldownsResetMessage());
+    }
+
+    async clearBag(id?: string) {
+        if (!await this.isAdmin()) {
+            return this.message.send(makeNotAdminMessage(this.message.author().username));
+        }
+
+        if (!id || id === '') {
+            return this.message.send('Oops! Looks like you forgot to include the username of the bag being cleared! Please try again with -clearbag [@username]');
+        }
+
+        const targetPlayerId = id.replace(/[!@<>]/g, '');
+        const targetPlayer: IPlayer | null = await Player.findOne({ id: targetPlayerId }).exec();
+
+        if (!targetPlayer) {
+            return this.message.send('Player not found. Please try again');
+        }
+
+        await targetPlayer.clearBag();
+
+        this.message.send(makeUnbannedMessage(targetPlayer.get('username')));
+    }
+
+    async generateLoot() {
+        const player: IPlayer = await this.message.player();
+
+        if (!await this.isAdmin()) {
+            return this.message.send(makeNotAdminMessage(player.username));
+        }
+
+        await player.makeItem();
+
+        return;
+    }
+
+    async sortBackpack() {
+        const player: IPlayer = await this.message.player();
+
+        const sort = await player.sortBackpack();
+
+        return;
     }
 
 }

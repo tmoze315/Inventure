@@ -9,6 +9,8 @@ const enemies = [
         image: 'https://www.maxpixel.net/static/photo/1x/Fire-Demon-Flames-Chaos-Burn-Inflamed-Devil-Hell-2708544.jpg',
         type: 'standard',
         battleDurationMinutes: 1,
+        xpMultiplier: 1,
+        goldMultiplier: 1,
     },
     <IEnemy>{
         name: 'Forest of Angels - Abyssal Demon 20hp',
@@ -18,6 +20,8 @@ const enemies = [
         image: 'https://www.maxpixel.net/static/photo/1x/Fire-Demon-Flames-Chaos-Burn-Inflamed-Devil-Hell-2708544.jpg',
         type: 'standard',
         battleDurationMinutes: 1,
+        xpMultiplier: 1,
+        goldMultiplier: 1,
     },
     <IEnemy>{
         name: 'Forest of Angels - Abyssal Demon 40hp',
@@ -27,6 +31,8 @@ const enemies = [
         image: 'https://www.maxpixel.net/static/photo/1x/Fire-Demon-Flames-Chaos-Burn-Inflamed-Devil-Hell-2708544.jpg',
         type: 'standard',
         battleDurationMinutes: 1,
+        xpMultiplier: 1,
+        goldMultiplier: 1,
     },
     <IEnemy>{
         name: 'Forest of Angels - Abyssal Demon 35hp',
@@ -36,6 +42,8 @@ const enemies = [
         image: 'https://www.maxpixel.net/static/photo/1x/Fire-Demon-Flames-Chaos-Burn-Inflamed-Devil-Hell-2708544.jpg',
         type: 'standard',
         battleDurationMinutes: 1,
+        xpMultiplier: 1,
+        goldMultiplier: 1,
     },
     <IEnemy>{
         name: 'Forest of Angels - Abyssal Demon 50hp',
@@ -45,6 +53,8 @@ const enemies = [
         image: 'https://www.maxpixel.net/static/photo/1x/Fire-Demon-Flames-Chaos-Burn-Inflamed-Devil-Hell-2708544.jpg',
         type: 'standard',
         battleDurationMinutes: 1,
+        xpMultiplier: 1,
+        goldMultiplier: 1,
     },
     <IEnemy>{
         name: 'Forest of Angels - Bronze Dragon',
@@ -54,6 +64,8 @@ const enemies = [
         image: 'https://cdn.pixabay.com/photo/2017/01/13/07/57/dragon-1976596_960_720.jpg',
         type: 'mini-boss',
         battleDurationMinutes: 1,
+        xpMultiplier: 1,
+        goldMultiplier: 1,
     },
 ];
 

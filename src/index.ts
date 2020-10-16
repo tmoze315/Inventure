@@ -1,4 +1,6 @@
 import dotenv from 'dotenv';
+import _ from 'lodash';
+
 dotenv.config();
 
 import { connect } from 'mongoose';
@@ -7,6 +9,7 @@ import Application from './application';
 import { Discord } from './discord/discord';
 import { Message as DiscordMessage } from 'discord.js';
 import { Message } from './discord/message';
+import { makeErrorMessage } from './messages/error';
 
 (async () => {
     await connect(AdventureConfig.mongodb.url, {
@@ -23,6 +26,12 @@ import { Message } from './discord/message';
         const application = new Application;
         const message = new Message(discordMessage);
 
-        await application.handleMessage(message);
+        try {
+            await application.handleMessage(message);
+        } catch (error) {
+            console.error(error);
+
+            message.send(makeErrorMessage('Oops, it looks like something went wrong. Please try again. If the problem persists, get in touch with an admin.'));
+        }
     });
 })();

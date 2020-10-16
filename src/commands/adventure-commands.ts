@@ -16,7 +16,7 @@ import { makeErrorMessage } from "../messages/error";
 import { makeSuccessMessage } from "../messages/success";
 import { makeLockedMessage } from "../messages/locked";
 import { makeCannotSummonBossMessage } from "../messages/cannot-summon-boss";
-import { EarnedSkillpoints, IPlayer, Player, RewardResult } from "../models/Player"
+import { EarnedSkillpoints, IPlayer, Player, RewardResult, LootReward } from "../models/Player"
 import { makeEarnedSkillpoints } from "../messages/earned-skillpoints-and-levelup"
 
 
@@ -234,10 +234,9 @@ class AdventureCommands extends BaseCommands {
         if (totalDamage >= adventure.enemy.baseHp) {
             won = true;
 
-
-
             const allRewardResults: Array<RewardResult> = [];
             const allSkillpointRewards: Array<EarnedSkillpoints> = [];
+            const allLootRewards: Array<LootReward> = [];
 
             const adventureResultsMessageWin = makeAdventureResults(won, adventure.enemy, totalDamage, allPlayerResults);
             this.message.send(adventureResultsMessageWin);
@@ -246,6 +245,9 @@ class AdventureCommands extends BaseCommands {
                 const currentPlayer: IPlayer = allPlayerResults[i].player;
 
                 const startLevel = await currentPlayer.level;
+
+                const lootResult = await currentPlayer.postBattleLootRewards(currentPlayer, adventure.area);
+                allLootRewards.push(lootResult);
 
                 const rewardResult = await currentPlayer.postBattleRewards(currentPlayer, adventure.enemy, adventure.area);
 
@@ -260,8 +262,6 @@ class AdventureCommands extends BaseCommands {
                 totalXp += xpGained;
                 totalGold += goldGained;
 
-
-                // console.log(earnedSkillpoints);
                 allSkillpointRewards.push(earnedSkillpoints);
             }
 
@@ -278,6 +278,7 @@ class AdventureCommands extends BaseCommands {
             }
 
             let levelUpCount = 0;
+            let chestCount = 0;
 
             for (let i = 0; i < allSkillpointRewards.length; i++) {
                 if (allSkillpointRewards[i].levelUp == true) {
@@ -285,12 +286,17 @@ class AdventureCommands extends BaseCommands {
                 }
             }
 
+            for (let i = 0; i < allLootRewards.length; i++) {
+                if (allLootRewards[i].total > 0) {
+                    chestCount = (chestCount + allLootRewards[i].total);
+                }
+            }
 
             const adventureRewardsMessageWin = makeAdventureRewards(allPlayerResults, allRewardResults);
             this.message.send(adventureRewardsMessageWin);
 
-            if (levelUpCount > 0) {
-                const earnedSkillpointsMessage = makeEarnedSkillpoints(allSkillpointRewards);
+            if (levelUpCount > 0 || chestCount > 0) {
+                const earnedSkillpointsMessage = makeEarnedSkillpoints(allSkillpointRewards, allLootRewards);
                 this.message.send(earnedSkillpointsMessage);
             }
 
