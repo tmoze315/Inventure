@@ -3,7 +3,6 @@ import { Schema, model, Document } from 'mongoose';
 import addSeconds from 'date-fns/addSeconds';
 import isAfter from 'date-fns/isAfter';
 import { IArea } from '../areas/base-area';
-import AreaService from '../services/AreaService';
 
 interface IGuild extends Document {
     id: String;
@@ -158,6 +157,8 @@ GuildSchema.methods.startAreaBossCooldown = function (): Promise<any> {
 };
 
 GuildSchema.methods.changeArea = function (area: string | IArea | null): Promise<any> {
+    const AreaService = registry.lookup('AreaService');
+
     if (typeof area === 'string') {
         area = AreaService.findArea(area);
     }
@@ -176,6 +177,8 @@ GuildSchema.methods.changeArea = function (area: string | IArea | null): Promise
 };
 
 GuildSchema.methods.getCurrentArea = function (): IArea | null {
+    const AreaService = registry.lookup('AreaService');
+
     return AreaService.findArea(this.get('currentArea'));
 };
 
@@ -184,6 +187,8 @@ GuildSchema.methods.canTravelToArea = function (area: IArea): boolean {
 }
 
 GuildSchema.methods.getUnlockedAreas = function (): Array<IArea> {
+    const AreaService = registry.lookup('AreaService');
+
     return this.get('unlockedAreas').map((areaName: string): IArea | null => {
         return AreaService.findArea(areaName);
     }).filter((item: IArea | null): boolean => {

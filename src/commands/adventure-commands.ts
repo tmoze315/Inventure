@@ -19,6 +19,7 @@ import { makeCannotSummonBossMessage } from "../messages/cannot-summon-boss";
 import { EarnedSkillpoints, IPlayer, Player, RewardResult, LootReward } from "../models/Player"
 import { makeEarnedSkillpoints } from "../messages/earned-skillpoints-and-levelup"
 import now from '../utils/time';
+import timeout from "../utils/timeout";
 
 interface CurrentAdventure {
     area: IArea,
@@ -49,7 +50,6 @@ interface PlayerAttack {
 class AdventureCommands extends BaseCommands {
     async adventure() {
         if (this.guild.isLocked) {
-            console.log('here');
             return this.message.send(makeLockedMessage());
         }
 
@@ -61,7 +61,7 @@ class AdventureCommands extends BaseCommands {
 
             const cooldownMessage = await this.message.send(makeCannotAdventureMessage(cooldown, time));
 
-            setTimeout(() => {
+            timeout(() => {
                 cooldownMessage.edit(makeCanAdventureMessage());
             }, timer);
 
@@ -85,7 +85,7 @@ class AdventureCommands extends BaseCommands {
         const area: IArea | null = this.guild.getCurrentArea();
 
         if (!area) {
-            this.message.send('Oops, it doesn\'t look like you are in an area. Travel somewhere with the `-area` command');
+            this.message.send(makeErrorMessage('Oops, it doesn\'t look like you are in an area. Travel somewhere with the `-area` command'));
             return null;
         }
 

@@ -49,6 +49,7 @@ class MessageFactory {
         const message = new Message(new MockMessage);
 
         jest.spyOn(message, 'send');
+        jest.spyOn(message, 'edit');
 
         if (this.content !== '') {
             message._content = this.content;

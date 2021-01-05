@@ -11,6 +11,7 @@ import { Message as DiscordMessage } from 'discord.js';
 import { Message } from './discord/message';
 import { makeErrorMessage } from './messages/error';
 import { registry } from '@alexlafroscia/service-locator';
+import AreaService from './services/AreaService';
 
 (async () => {
     await connect(AdventureConfig.mongodb.url, {
@@ -29,6 +30,7 @@ import { registry } from '@alexlafroscia/service-locator';
 
         registry.register('message', message);
         registry.register('AdventureConfig', AdventureConfig);
+        registry.register('AreaService', new AreaService);
 
         try {
             await application.handleMessage();

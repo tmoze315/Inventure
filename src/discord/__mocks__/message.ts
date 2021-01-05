@@ -3,12 +3,14 @@ import { IGuild } from '../../models/Guild';
 import { IPlayer } from '../../models/Player';
 import { IMessage } from '../message';
 import { User } from '../user';
+import { MessageFactory } from '../__helpers__/jest.factories';
 
 class Message implements IMessage {
     public _player: IPlayer | null = null;
     public _guild: IGuild | null = null;
     public _isFromBot: boolean = false;
     public _content: string = '';
+    private _nextSendMessage: Message;
 
     constructor(private discordMessage: DiscordMessage) { }
 
@@ -40,8 +42,14 @@ class Message implements IMessage {
         return this._isFromBot || false;
     }
 
-    async send(data: any): Promise<any> {
-        return data;
+    setNextSendMessage(message: Message) {
+        this._nextSendMessage = message;
+    }
+
+    send(data: any): Promise<any> {
+        return Promise.resolve().then(() => {
+            return this._nextSendMessage;
+        });
     }
 
     async edit(data: any): Promise<any> {

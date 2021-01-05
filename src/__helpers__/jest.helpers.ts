@@ -16,4 +16,13 @@ const mockTime = (date: Date) => {
     now.mockReturnValue(date);
 }
 
-export { runApplication, mockTime };
+const mockSetTimeout = (callback: CallableFunction) => {
+    jest.mock('../utils/modules/settimeout');
+    const timeout = require('../utils/modules/settimeout');
+
+    timeout.mockImplementation((fn: CallableFunction, time: number) => {
+        callback(fn, time);
+    });
+}
+
+export { runApplication, mockTime, mockSetTimeout };
