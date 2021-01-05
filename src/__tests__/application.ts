@@ -1,5 +1,5 @@
 import { factory, MessageFactory } from '../discord/__helpers__/jest.factories';
-import { runApplication } from '../discord/__helpers__/jest.helpers';
+import { runApplication } from '../__helpers__/jest.helpers';
 import { Guild } from '../models/Guild';
 import { Player } from '../models/Player';
 

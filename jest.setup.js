@@ -1,5 +1,7 @@
 const { connect, connection } = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
+import { registry } from '@alexlafroscia/service-locator';
+import { AdventureConfig } from './src/config/adventure';
 
 const mongodb = new MongoMemoryServer();
 
@@ -20,12 +22,11 @@ afterAll(async () => {
     await mongodb.stop();
 });
 
+beforeEach(() => {
+    registry.register('AdventureConfig', AdventureConfig);
+})
+
 afterEach(async () => {
+    registry.reset();
     await connection.dropDatabase();
 });
-
-// expect.extend({
-//     discordMessageContaining: () => {
-        
-//     }
-// });

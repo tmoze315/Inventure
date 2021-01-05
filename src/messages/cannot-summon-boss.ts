@@ -1,4 +1,4 @@
-import { formatDistance } from 'date-fns';
+import formatDistance from 'date-fns/formatDistance';
 import { MessageEmbed } from 'discord.js';
 
 const makeCannotSummonBossMessage = (cooldown: Date, now: Date) => {

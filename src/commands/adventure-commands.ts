@@ -1,6 +1,6 @@
 import { Message, CollectorFilter, Collection, MessageReaction, User, MessageEmbed } from "discord.js";
 import BaseCommands from "./base-commands";
-import { differenceInMilliseconds } from 'date-fns';
+import differenceInMilliseconds from 'date-fns/differenceInMilliseconds';
 import { makeCanAdventureMessage } from "../messages/can-adventure";
 import { makeCannotAdventureMessage } from "../messages/cannot-adventure";
 import { makeAdventureBattleMessage } from "../messages/adventure-battle";
@@ -18,7 +18,7 @@ import { makeLockedMessage } from "../messages/locked";
 import { makeCannotSummonBossMessage } from "../messages/cannot-summon-boss";
 import { EarnedSkillpoints, IPlayer, Player, RewardResult, LootReward } from "../models/Player"
 import { makeEarnedSkillpoints } from "../messages/earned-skillpoints-and-levelup"
-
+import now from '../utils/time';
 
 interface CurrentAdventure {
     area: IArea,
@@ -49,16 +49,17 @@ interface PlayerAttack {
 class AdventureCommands extends BaseCommands {
     async adventure() {
         if (this.guild.isLocked) {
-            return await this.message.send(makeLockedMessage());
+            console.log('here');
+            return this.message.send(makeLockedMessage());
         }
 
-        const now = new Date;
+        const time = now();
 
         if (!this.guild.canAdventure(now)) {
             const cooldown = this.guild.getAdventureCooldown();
-            const timer = differenceInMilliseconds(cooldown, now);
+            const timer = differenceInMilliseconds(cooldown, time);
 
-            const cooldownMessage = await this.message.send(makeCannotAdventureMessage(cooldown, now));
+            const cooldownMessage = await this.message.send(makeCannotAdventureMessage(cooldown, time));
 
             setTimeout(() => {
                 cooldownMessage.edit(makeCanAdventureMessage());

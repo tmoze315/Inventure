@@ -3,4 +3,7 @@ module.exports = {
     testEnvironment: 'node',
     modulePathIgnorePatterns: ['dist'],
     setupFilesAfterEnv: ['jest-extended', '<rootDir>/jest.setup.js'],
+    transform: {
+        "^.+\\.jsx?$": "babel-jest"
+    }
 };

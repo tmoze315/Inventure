@@ -1,6 +1,6 @@
 import { Message } from 'discord.js';
 import { Client } from 'discord.js';
-import AdventureConfig from '../config/adventure';
+import { AdventureConfig } from '../config/adventure';
 
 class Discord {
     private client: Client | null = null;

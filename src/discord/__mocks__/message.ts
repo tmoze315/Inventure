@@ -43,6 +43,10 @@ class Message implements IMessage {
     async send(data: any): Promise<any> {
         return data;
     }
+
+    async edit(data: any): Promise<any> {
+        return data;
+    }
 }
 
 export { Message }

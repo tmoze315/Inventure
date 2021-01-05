@@ -1,3 +1,4 @@
+import { registry } from '@alexlafroscia/service-locator';
 import { makeAdventureResetMessage } from "../messages/adventure-reset";
 import { makeBannedMessage } from "../messages/banned";
 import { makeCooldownsResetMessage } from "../messages/cooldowns-reset";
@@ -10,7 +11,6 @@ import { makeUnbannedMessage } from "../messages/unbanned";
 import { makeXPLevelChangedMessage } from "../messages/xp-level-changed";
 import { IPlayer, Player } from "../models/Player";
 import BaseCommands from "./base-commands";
-import AdventureConfig from '../config/adventure';
 
 class AdminCommands extends BaseCommands {
     private async isAdmin() {
@@ -25,6 +25,8 @@ class AdminCommands extends BaseCommands {
 
     // Makes any player an administrator with -makeadmin [@username] ?[password] (Password is optional. If you are already an admin you don't need to enter it.)
     async makeAdmin(id: string, password?: string) {
+        const AdventureConfig = registry.lookup('AdventureConfig');
+
         if (!id || id === '') {
             return this.message.send('Oops! Looks like you forgot to include the username of the player you are promoting! Please try again with -makeadmin [@username]');
         }

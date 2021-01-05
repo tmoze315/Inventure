@@ -1,4 +1,4 @@
-interface Config {
+interface IAdventureConfig {
     adventureCooldownInSeconds: number,
     bossCooldownInSeconds: number,
     adminPassword: string,
@@ -13,7 +13,7 @@ interface Config {
     },
 };
 
-export default <Config>{
+const AdventureConfig = <IAdventureConfig>{
     adventureCooldownInSeconds: process.env.ADVENTURE_COOLDOWN_IN_SECONDS || 30,
     bossCooldownInSeconds: process.env.BOSS_COOLDOWN_IN_SECONDS || 3600, // 1 hour
     adminPassword: process.env.ADMIN_PASSWORD,
@@ -27,3 +27,5 @@ export default <Config>{
         autoIndex: process.env.MONGODB_AUTO_INDEX || true,
     },
 };
+
+export { AdventureConfig, IAdventureConfig }

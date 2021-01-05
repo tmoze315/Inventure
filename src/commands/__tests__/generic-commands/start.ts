@@ -1,10 +1,11 @@
 import { factory, MessageFactory } from '../../../discord/__helpers__/jest.factories';
-import { runApplication } from '../../../discord/__helpers__/jest.helpers';
+import { runApplication } from '../../../__helpers__/jest.helpers';
 import { Player } from '../../../models/Player';
 
 describe('-start', () => {
     test('Can start an adventure', async () => {
         const message = new MessageFactory('-start').make();
+
         await runApplication(message);
 
         expect(message.send).toBeCalledWith(

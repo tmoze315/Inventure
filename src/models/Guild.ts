@@ -1,6 +1,7 @@
+import { registry } from '@alexlafroscia/service-locator';
 import { Schema, model, Document } from 'mongoose';
-import { addSeconds, isAfter } from 'date-fns';
-import AdventureConfig from '../config/adventure';
+import addSeconds from 'date-fns/addSeconds';
+import isAfter from 'date-fns/isAfter';
 import { IArea } from '../areas/base-area';
 import AreaService from '../services/AreaService';
 
@@ -112,11 +113,14 @@ GuildSchema.methods.getAdventureCooldown = function (): Date | null {
         return null;
     }
 
+    const AdventureConfig = registry.lookup('AdventureConfig');
+
     return addSeconds(this.lastAdventure, AdventureConfig.adventureCooldownInSeconds);
 }
 
 GuildSchema.methods.getAreaBossCooldown = function (): Date | null {
     const lastBattleWithAreaBoss = this.get(`lastAreaBosses.${this.currentArea}`);
+    const AdventureConfig = registry.lookup('AdventureConfig');
 
     if (!lastBattleWithAreaBoss) {
         return null;

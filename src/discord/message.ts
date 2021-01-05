@@ -52,6 +52,10 @@ class Message implements IMessage {
     send(data: any): Promise<any> {
         return this.discordMessage.channel.send(data);
     }
+
+    edit(data: any): Promise<any> {
+        return this.discordMessage.edit(data);
+    }
 }
 
 export { Message, IMessage }
